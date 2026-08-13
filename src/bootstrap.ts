@@ -10,8 +10,10 @@ import { routes } from './app/app.routes';
 // `localStorage` via SessionService (no provider needed — it is
 // `providedIn: 'root'`).
 //
-// There is deliberately NO provideHttpClient() here: both BFF services in this
-// remote (MeshBffService, UserMeshBffService) use the platform `fetch` with
+// There is deliberately NO provideHttpClient() here: the BFF service(s) in this
+// remote (currently just MeshBffService; a second service fronting the caller's
+// own claimed-device endpoints on user-bff-api is planned but NOT yet committed
+// — there is no UserMeshBffService file in this repo) use the platform `fetch` with
 // `credentials: 'include'` — admin-ui's BffService convention — so the HttpOnly
 // `bff_` session cookie rides every request without an interceptor, and the
 // gateway's BffCookieToBearerWebFilter mints the upstream bearer server-side.
