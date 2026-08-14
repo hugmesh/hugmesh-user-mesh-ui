@@ -1,5 +1,5 @@
 // REMOTE bundle config for the Mesh dashboard micro-frontend (native-federation
-// remote name "user-mesh"). The hugmesh.systems host consumes the single
+// remote name "user-mesh"). The hugmesh.net host consumes the single
 // exposed `./routes` module via loadRemoteModule({ remoteName: 'user-mesh',
 // exposedModule: './routes' }) and mounts USER_MESH_ROUTES at /user-mesh — so the
 // remote name and the exposed module key MUST stay unchanged or the host's mesh

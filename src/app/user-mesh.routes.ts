@@ -13,7 +13,7 @@ import { meshGuard } from './mesh.guard';
  * working module.
  *
  * Routes exposed by the Mesh dashboard native-federation remote (`./routes`).
- * The hugmesh.systems host mounts these at `/user-mesh`, giving:
+ * The hugmesh.net host mounts these at `/user-mesh`, giving:
  *
  * - `/user-mesh`          → {@link NodesComponent}     — the mesh node directory
  *   (every LoRa radio the bridge has heard), the default landing view.
