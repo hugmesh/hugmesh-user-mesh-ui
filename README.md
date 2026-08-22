@@ -1,6 +1,6 @@
 # HugMesh User Mesh UI
 
-The **Mesh dashboard** for [HugMesh](https://github.com/hugmesh-net) — an Angular
+The **Mesh dashboard** for [HugMesh](https://github.com/hugmesh) — an Angular
 [native-federation](https://github.com/angular-architects/module-federation-plugin)
 micro-frontend that gives every HugMesh user a view onto their
 [Meshtastic](https://meshtastic.org/)-compatible LoRa radio mesh: which nodes are
@@ -91,11 +91,11 @@ Related HugMesh repositories:
 
 | Repository | Role |
 |---|---|
-| [`hugmesh-mesh-bff-api`](https://github.com/hugmesh-net/hugmesh-mesh-bff-api) | Backend-for-frontend this remote talks to (`/bff/mesh/**`) |
-| [`hugmesh-user-bff-api`](https://github.com/hugmesh-net/hugmesh-user-bff-api) | Owns device claiming/registration and the node-id validation this remote mirrors client-side |
-| [`hugmesh-admin-ui`](https://github.com/hugmesh-net/hugmesh-admin-ui) | Sibling remote; source of the `__SNAP_BFF_URL__` runtime-override convention this repo follows |
-| [`hugmesh-matrix-ui`](https://github.com/hugmesh-net/hugmesh-matrix-ui) | Sibling remote with its own mesh-devices settings section; re-derives the same node-id/format rules independently (native federation doesn't allow sharing runtime code across remotes) |
-| [`hugmesh-mod-ui`](https://github.com/hugmesh-net/hugmesh-mod-ui) | Sibling remote using the same `federation-base.js` pattern |
+| [`hugmesh-mesh-bff-api`](https://github.com/hugmesh/hugmesh-mesh-bff-api) | Backend-for-frontend this remote talks to (`/bff/mesh/**`) |
+| [`hugmesh-user-bff-api`](https://github.com/hugmesh/hugmesh-user-bff-api) | Owns device claiming/registration and the node-id validation this remote mirrors client-side |
+| [`hugmesh-admin-ui`](https://github.com/hugmesh/hugmesh-admin-ui) | Sibling remote; source of the `__SNAP_BFF_URL__` runtime-override convention this repo follows |
+| [`hugmesh-matrix-ui`](https://github.com/hugmesh/hugmesh-matrix-ui) | Sibling remote with its own mesh-devices settings section; re-derives the same node-id/format rules independently (native federation doesn't allow sharing runtime code across remotes) |
+| [`hugmesh-mod-ui`](https://github.com/hugmesh/hugmesh-mod-ui) | Sibling remote using the same `federation-base.js` pattern |
 
 ## Routes
 
