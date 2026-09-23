@@ -5,13 +5,6 @@ import { ChannelsComponent } from './channels.component';
 import { meshGuard } from './mesh.guard';
 
 /**
- * ⚠️ NOT YET BUILDABLE. This module wires up the routes below, but the three
- * component imports above (nodes.component, my-devices.component,
- * channels.component) currently point at files that DO NOT EXIST in this repo.
- * This is a WIP scaffold — see the README. Building it will fail until those
- * components land; the routing shape here is the committed intent, not a
- * working module.
- *
  * Routes exposed by the Mesh dashboard native-federation remote (`./routes`).
  * The hugmesh.net host mounts these at `/user-mesh`, giving:
  *

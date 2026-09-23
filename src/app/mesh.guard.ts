@@ -20,8 +20,6 @@ import { SessionService } from './session.service';
 export const meshGuard: CanActivateFn = () => {
   const session = inject(SessionService);
   const router = inject(Router);
-  // Allow access when the caller holds the MESH role (or an admin superset).
   if (session.isMesh()) return true;
-  // Redirect to the login page for any other caller (unauthenticated or wrong role).
   return router.parseUrl('/login');
 };

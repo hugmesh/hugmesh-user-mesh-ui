@@ -1,19 +1,18 @@
 @use 'styles/tokens' as t;
 
-// Mesh dashboard micro-frontend (native-federation remote "user-mesh"). Unlike
-// the host shell this remote does NOT pull in Bootstrap — it ships only the shared
+// Mesh dashboard micro-frontend (native-federation remote). Unlike the host
+// shell this remote does NOT pull in Bootstrap — it includes only the shared
 // HugMesh a11y baseline so it is accessible served standalone (`ng serve
-// user-mesh`) AND consistent in look + focus behaviour once federated into the
-// hugmesh.net host. The a11y rules below are copied verbatim from the
-// host's src/styles.scss (two-layer focus ring, underlined links, coarse-pointer
-// targets, .sr util, --hug-* palette, prefers-reduced-motion + prefers-contrast)
-// so a remote served on its own matches the host's accessibility contract.
+// user-mesh`) AND consistent in look + focus behaviour once loaded into the
+// hugmesh.net host. The a11y rules below are copied from the host's src/styles.scss
+// (two-layer focus ring, underlined links, coarse-pointer targets, .sr util,
+// --hug-* palette, prefers-reduced-motion + prefers-contrast) to match the
+// host's accessibility contract.
 //
-// PALETTE CONTRACT: this remote styles exclusively with the cross-repo --hug-*
-// tokens below (the canonical HugMesh rule — neon gold is HOST-SHELL chrome
-// only). The neon/pastel SCSS tokens + all of styles/_mixins.scss are host-only
-// legacy left in styles/_tokens.scss for parity; this remote consumes only the
-// neutral radii/z-index/breakpoint/font tokens from that sheet.
+// This remote uses exclusively the cross-repo --hug-* tokens below (the
+// canonical HugMesh rule). Neon gold is host chrome only. The neon/pastel SCSS
+// tokens in styles/_tokens.scss are host-only legacy; this remote consumes only
+// the neutral radii/z-index/breakpoint/font tokens.
 
 /* HugMesh WCAG-AA/AAA palette — centralised as runtime :root custom
  * properties (mirrors hugmesh.games/frontend/src/styles.scss). Each token
@@ -69,8 +68,7 @@ h2 {
     width: auto;
     height: auto;
     padding: 0.6rem 1.2rem;
-    // Skip-link chrome on the --hug-* contract (was gold t.$neon/t.$charcoal —
-    // gold is host-shell-only; a remote must render one accent family per page).
+    // Skip-link styled with the --hug-* contract (not host-shell gold).
     background: var(--hug-bg-1);
     color: var(--hug-text);
     font-size: 1rem;
@@ -143,13 +141,10 @@ a {
   font-weight: 600;
 }
 
-// DISABLED + HELPTEXT convention (cross-cutting, mirrors the API permissions).
-// A control that is [disabled]/aria-disabled because the caller lacks a role or
-// capability gets an aria-describedby pointing at a sibling .field-help / .hint
-// span that STATES the missing role — so the UI explains *why* (defence-in-depth:
-// the API stays the source of truth; the UI mirrors it by disabling + explaining
-// rather than hiding or 403-on-click). Muted but AAA-contrast (--hug-text-muted
-// 8.77:1) and never colour-alone (it sits next to the disabled control + label).
+// DISABLED + HELPTEXT convention: a disabled control gets an aria-describedby
+// pointing to helptext that explains why (defence-in-depth: the API stays the
+// source of truth). Muted but AAA-contrast (--hug-text-muted 8.77:1) and never
+// colour-alone (sits next to the disabled control + label).
 .field-help,
 .hint {
   display: block;
@@ -160,9 +155,8 @@ a {
 
 // A control disabled to mirror an API gate keeps a visible "this is off" cue
 // beyond opacity alone (WCAG 1.4.1): a not-allowed cursor + reduced emphasis.
-// NOTE the admin-only / no-endpoint controls use aria-disabled (NOT native
-// `disabled`) so the control STAYS in the tab order and a screen reader lands on
-// it and announces the aria-describedby helptext explaining WHY it is gated.
+// Uses aria-disabled (not native `disabled`) to keep the control in the tab order
+// so a screen reader announces the helptext explaining why it is gated.
 button:disabled,
 [aria-disabled='true'] {
   cursor: not-allowed;
