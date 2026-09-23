@@ -12,7 +12,7 @@ import { routes } from './app/app.routes';
 //
 // There is deliberately NO provideHttpClient() here: BFF services in this
 // remote use the platform `fetch` with `credentials: 'include'` — matching
-// admin-ui's pattern — so the HttpOnly `bff_` session cookie rides every
+// admin-ui's BffService convention — so the HttpOnly `bff_` session cookie rides every
 // request without an interceptor. The gateway's BffCookieToBearerWebFilter
 // mints the upstream bearer server-side. Providing an unused HttpClient would be
 // a dead provider in both the dev shell and the federated build.

@@ -1,8 +1,12 @@
 // Shared federation config helpers for the host shell + any future remote
-// bundles. Centralises the federation surface (singletons, strictVersion, the
-// RxJS skip list) so drift between host and remotes cannot cause runtime
-// failures (e.g. "shared is not a function" from different RxJS subpath
-// handling).
+// bundles authored in this repo.
+//
+// The host's federation.config.js used to inline the same shareAll args and
+// skip list every other HugMesh repo carries. Centralising them here means
+// the federation surface (singletons, strictVersion, the RxJS skip list) lives
+// in ONE place — so a drift between host and remotes (e.g. one bundle sharing a
+// different RxJS subpath) can't quietly produce a "shared is not a function"
+// runtime failure. Mirrors hugmesh.games/frontend/federation-base.js.
 //
 // Used by:
 //   - ./federation.config.js (this host)

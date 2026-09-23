@@ -1,5 +1,7 @@
-// Unused in this remote; kept for token-sheet parity with the host.
-// Do not use or import these.
+// Unused in this remote. These gold surface/glow mixins are the hugmesh.net host
+// shell's visual identity (neon on near-black); this remote styles only with the
+// --hug-* contract (src/styles.scss), so nothing here is @use'd or @include'd.
+// Kept for token-sheet parity with the host. Do not wire these into the remote.
 @use 'tokens' as t;
 
 @mixin card-surface {

@@ -72,8 +72,8 @@ flowchart LR
 Key points of that contract:
 
 - The federation remote name is **`user-mesh`**; the exposed module is
-  **`./routes`**, resolving to `USER_MESH_ROUTES`. Both are critical — the
-  host looks them up by these exact strings.
+  **`./routes`**, resolving to `USER_MESH_ROUTES`. The host looks them up by
+  these exact strings, so renaming either breaks the mount.
 - Shared dependencies (Angular, RxJS, etc.) and the RxJS-subpath skip list live
   in `federation-base.js`, shared with every other HugMesh remote so a
   dependency-sharing mismatch (a classic "shared is not a function" runtime

@@ -27,7 +27,7 @@
  * hugmesh-matrix-ui's mesh-devices settings section. Native federation forbids a
  * shared runtime import across remote boundaries and these are separate repos, so
  * the logic is RE-DERIVED here rather than cross-imported — the specs in this
- * repo pin the behaviour so a drift is caught locally.
+ * repo assert the behaviour so a drift is caught locally.
  */
 
 // ── Limits + wire conventions ───────────────────────────────────────────────

@@ -1,6 +1,6 @@
 @use 'styles/tokens' as t;
 
-// Mesh dashboard micro-frontend (native-federation remote). Unlike the host
+// Mesh dashboard micro-frontend (native-federation remote "user-mesh"). Unlike the host
 // shell this remote does NOT pull in Bootstrap — it includes only the shared
 // HugMesh a11y baseline so it is accessible served standalone (`ng serve
 // user-mesh`) AND consistent in look + focus behaviour once loaded into the
@@ -68,7 +68,8 @@ h2 {
     width: auto;
     height: auto;
     padding: 0.6rem 1.2rem;
-    // Skip-link styled with the --hug-* contract (not host-shell gold).
+    // Skip-link styled with the --hug-* contract, not host-shell gold: a remote
+    // must render one accent family per page.
     background: var(--hug-bg-1);
     color: var(--hug-text);
     font-size: 1rem;
@@ -141,10 +142,13 @@ a {
   font-weight: 600;
 }
 
-// DISABLED + HELPTEXT convention: a disabled control gets an aria-describedby
-// pointing to helptext that explains why (defence-in-depth: the API stays the
-// source of truth). Muted but AAA-contrast (--hug-text-muted 8.77:1) and never
-// colour-alone (sits next to the disabled control + label).
+// DISABLED + HELPTEXT convention (cross-cutting, mirrors the API permissions).
+// A control that is [disabled]/aria-disabled because the caller lacks a role or
+// capability gets an aria-describedby pointing at a sibling .field-help / .hint
+// span that STATES the missing role — so the UI explains *why* (defence-in-depth:
+// the API stays the source of truth; the UI mirrors it by disabling + explaining
+// rather than hiding or 403-on-click). Muted but AAA-contrast (--hug-text-muted
+// 8.77:1) and never colour-alone (it sits next to the disabled control + label).
 .field-help,
 .hint {
   display: block;
@@ -155,8 +159,9 @@ a {
 
 // A control disabled to mirror an API gate keeps a visible "this is off" cue
 // beyond opacity alone (WCAG 1.4.1): a not-allowed cursor + reduced emphasis.
-// Uses aria-disabled (not native `disabled`) to keep the control in the tab order
-// so a screen reader announces the helptext explaining why it is gated.
+// NOTE the admin-only / no-endpoint controls use aria-disabled (NOT native
+// `disabled`) so the control STAYS in the tab order and a screen reader lands on
+// it and announces the aria-describedby helptext explaining WHY it is gated.
 button:disabled,
 [aria-disabled='true'] {
   cursor: not-allowed;
