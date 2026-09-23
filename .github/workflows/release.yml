@@ -1,7 +1,7 @@
 name: Release
 
-# Manual-only: this workflow is intentionally inert until a human enables it.
-# No push/tags trigger — dispatch it by hand from the Actions tab when ready.
+# Manual-only: this workflow is not triggered automatically; dispatch it by hand
+# from the Actions tab when ready.
 on:
   workflow_dispatch:
 
