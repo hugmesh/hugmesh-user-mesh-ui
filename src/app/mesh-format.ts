@@ -2,9 +2,7 @@
  * PURE presentation + untrusted-input helpers for the mesh dashboard. Every
  * function here is side-effect free, clock-injectable where time matters, and
  * has NO Angular dependency, so the whole presentation contract is unit-testable
- * on its own without a TestBed. NOTE: the companion `mesh-format.spec.ts` is
- * planned but has NOT been committed — this repo currently contains no
- * `*.spec.ts` files at all.
+ * on its own without a TestBed.
  *
  * <p>Two things live here:
  *
@@ -29,7 +27,7 @@
  * hugmesh-matrix-ui's mesh-devices settings section. Native federation forbids a
  * shared runtime import across remote boundaries and these are separate repos, so
  * the logic is RE-DERIVED here rather than cross-imported — the specs in this
- * repo pin the behaviour so a drift is caught locally.
+ * repo assert the behaviour so a drift is caught locally.
  */
 
 // ── Limits + wire conventions ───────────────────────────────────────────────
@@ -63,7 +61,7 @@ export const MESH_NODE_ID_PATTERN = /^![0-9a-f]{8}$/;
  * matches mesh-bff-api's own derivation (`app.mesh.node-online-window-seconds`,
  * default 300) so the dot this UI paints agrees with the `online` flag the BFF
  * sends; the UI derives it locally as well so a row from a mocked/older BFF that
- * omits the flag still gets an honest dot.
+ * omits the flag still gets an accurate dot showing the real state.
  */
 export const MESH_ONLINE_WINDOW_MS = 5 * 60_000;
 

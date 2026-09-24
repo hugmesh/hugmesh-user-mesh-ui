@@ -1,19 +1,18 @@
 @use 'styles/tokens' as t;
 
-// Mesh dashboard micro-frontend (native-federation remote "user-mesh"). Unlike
-// the host shell this remote does NOT pull in Bootstrap — it ships only the shared
+// Mesh dashboard micro-frontend (native-federation remote "user-mesh"). Unlike the host
+// shell this remote does NOT pull in Bootstrap — it includes only the shared
 // HugMesh a11y baseline so it is accessible served standalone (`ng serve
-// user-mesh`) AND consistent in look + focus behaviour once federated into the
-// hugmesh.net host. The a11y rules below are copied verbatim from the
-// host's src/styles.scss (two-layer focus ring, underlined links, coarse-pointer
-// targets, .sr util, --hug-* palette, prefers-reduced-motion + prefers-contrast)
-// so a remote served on its own matches the host's accessibility contract.
+// user-mesh`) AND consistent in look + focus behaviour once loaded into the
+// hugmesh.net host. The a11y rules below are copied from the host's src/styles.scss
+// (two-layer focus ring, underlined links, coarse-pointer targets, .sr util,
+// --hug-* palette, prefers-reduced-motion + prefers-contrast) to match the
+// host's accessibility contract.
 //
-// PALETTE CONTRACT: this remote styles exclusively with the cross-repo --hug-*
-// tokens below (the canonical HugMesh rule — neon gold is HOST-SHELL chrome
-// only). The neon/pastel SCSS tokens + all of styles/_mixins.scss are host-only
-// legacy left in styles/_tokens.scss for parity; this remote consumes only the
-// neutral radii/z-index/breakpoint/font tokens from that sheet.
+// This remote uses exclusively the cross-repo --hug-* tokens below (the
+// canonical HugMesh rule). Neon gold is host chrome only. The neon/pastel SCSS
+// tokens in styles/_tokens.scss are host-only legacy; this remote consumes only
+// the neutral radii/z-index/breakpoint/font tokens.
 
 /* HugMesh WCAG-AA/AAA palette — centralised as runtime :root custom
  * properties (mirrors hugmesh.games/frontend/src/styles.scss). Each token
@@ -69,8 +68,8 @@ h2 {
     width: auto;
     height: auto;
     padding: 0.6rem 1.2rem;
-    // Skip-link chrome on the --hug-* contract (was gold t.$neon/t.$charcoal —
-    // gold is host-shell-only; a remote must render one accent family per page).
+    // Skip-link styled with the --hug-* contract, not host-shell gold: a remote
+    // must render one accent family per page.
     background: var(--hug-bg-1);
     color: var(--hug-text);
     font-size: 1rem;

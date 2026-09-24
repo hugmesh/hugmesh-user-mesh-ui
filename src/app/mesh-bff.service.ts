@@ -67,8 +67,8 @@ export interface MeshRoom {
  *
  * <p>`online` prefers the server's own boolean (mesh-bff derives it from its
  * configured window) and falls back to the local 5-minute derivation when the
- * field is missing or not a boolean — so a mocked or older BFF still paints an
- * honest dot instead of marking every radio offline.
+ * field is missing or not a boolean — so a mocked or older BFF still shows an
+ * accurate online state instead of marking every radio offline.
  *
  * @param raw   one element of the wire array
  * @param nowMs injectable clock for the `online` fallback, so the parse is unit-testable
