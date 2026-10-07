@@ -1,0 +1,36 @@
+# Keep the image built from package-lock.json, not from a developer's disk.
+#
+# The Dockerfile runs `npm ci` and only then `COPY . .`. Without this file that
+# COPY would lay the host's own node_modules over the tree the lockfile just
+# installed, so the image would be built against whatever happened to be
+# installed locally. A fresh CI checkout has no node_modules, which is why the
+# defect never shows up there.
+#
+# Over-excluding breaks the image as surely as under-excluding: nginx.conf,
+# package*.json, angular.json, federation*.js, tsconfig*.json and src/ are all
+# read by the build and must stay in.
+
+# Installed/derived trees, regenerated inside the image.
+**/node_modules
+.angular
+dist
+out-tsc
+coverage
+
+# VCS, CI and editor metadata, never read by the build.
+.git
+.gitignore
+.gitattributes
+.github
+.vscode
+.idea
+**/*.swp
+
+# Local env/secrets must never enter an image layer.
+.env
+.env.*
+!.env.example
+
+# Test and report output.
+test-results
+**/*.log
