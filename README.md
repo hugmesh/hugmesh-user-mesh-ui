@@ -1,37 +1,37 @@
 # HugMesh User Mesh UI
 
-The **Mesh dashboard** for [HugMesh](https://github.com/hugmesh) — an Angular
+The **Mesh dashboard** for [HugMesh](https://github.com/hugmesh). It is an Angular
 [native-federation](https://github.com/angular-architects/module-federation-plugin)
-micro-frontend that gives every HugMesh user a view onto their
-[Meshtastic](https://meshtastic.org/)-compatible LoRa radio mesh: which nodes are
-reachable, which radios they've claimed, and which chat rooms are bridged onto the
-mesh.
+micro-frontend. It gives each HugMesh user a view of their
+[Meshtastic](https://meshtastic.org/)-compatible LoRa radio mesh: which nodes
+are reachable, which radios they have claimed, and which chat rooms are bridged
+onto the mesh.
 
-It is built as an independently built, independently deployed **remote** module
-for the platform's host shell to load at runtime — it is not a standalone product
-and is not meant to be run in production on its own. The host shell does not
-mount it yet (see [Status](#status)).
+It is a **remote** module, built and deployed on its own, that the platform's
+host shell is meant to load at runtime. It is not a standalone product and does
+not run alone in production. The host shell does not mount it yet (see
+[Status](#status)).
 
 ## What it does
 
 HugMesh bridges Meshtastic LoRa mesh networks into the platform's Matrix-based
-chat, so a community can keep talking over LoRa radios when the internet is down,
-and see that traffic show up in the same rooms they already use. This repository
-is the browser-side piece of that story: a small dashboard, embedded into the main
-HugMesh web app, that shows
+chat. A community can keep talking over LoRa radios when the internet is down,
+and that traffic shows up in the rooms they already use. This repository is the
+browser side of that: a small dashboard, embedded in the main HugMesh web app,
+that shows
 
 - **who else is on the mesh** — every node the mesh↔Matrix bridge has heard,
   with signal quality, battery, hop count and last-seen time;
-- **your own radios** — the LoRa devices you've claimed, so you can manage
+- **your own radios** — the LoRa devices you have claimed, so you can manage
   visibility and see their live status; and
 - **which chat rooms are mesh-enabled** — and which LoRa channel each one
   bridges.
 
 ## Status
 
-This repository currently contains the federation scaffold, the backend client,
-and the presentation/validation logic — the view components that render them are
-the next milestone.
+This repository holds the federation scaffold, the backend client, and the
+formatting and validation logic. The view components that render them are the
+next milestone.
 
 - [x] Native-federation remote wiring (build / serve / test targets, shared-deps
       and skip-list contract in `federation-base.js` / `federation.config.js`)
@@ -45,24 +45,28 @@ the next milestone.
 - [ ] Unit test suite (the Karma/Jasmine harness is wired up; specs are not yet
       written)
 
-The three routes below are declared and guarded already, but
-`src/app/user-mesh.routes.ts` imports `nodes.component`, `my-devices.component`
-and `channels.component`, and none of those files exist. Until they land, every
-build of this remote fails, and so does the Docker image build.
+The three routes below are declared and guarded. But `src/app/user-mesh.routes.ts`
+imports `nodes.component`, `my-devices.component` and `channels.component`, and
+none of those files exist. Until they land, every build of this remote fails,
+and so does the Docker image build.
 
 The remote is also not wired into the platform. On the 2026-10-07 `origin/main`
-of the sibling repos, `hugmesh-host-shell` has no `user-mesh` entry, the
-fe-gateway has no `/user-mesh` route, and the route-access seed has no
-`/user-mesh/**` row (only `/bff/mesh/**`, which needs `ROLE_MESH`).
+of the sibling repos:
+
+- `hugmesh-host-shell` has no `user-mesh` entry.
+- The fe-gateway has no `/user-mesh` route.
+- The route-access seed has no `/user-mesh/**` row. It has `/bff/mesh/**`, which
+  needs `ROLE_MESH`.
+
 `hugmesh-generator` carries a test that asserts this absence
-(`tests/e2e/features/mined-identity/mesh-remote-unmounted.feature`); the PR that
+(`tests/e2e/features/mined-identity/mesh-remote-unmounted.feature`). The PR that
 adds the three components must delete that test and add the route and the row.
 
 ## How it fits into HugMesh
 
-This remote is meant to be loaded by the platform's host shell over
+The platform's host shell is meant to load this remote over
 [`@angular-architects/native-federation`](https://www.npmjs.com/package/@angular-architects/native-federation),
-not bundled into it at build time. The intended contract: the host fetches this
+not bundle it at build time. The intended contract: the host fetches this
 remote's manifest and `remoteEntry.json` at runtime and mounts its single exposed
 module at `/user-mesh`. That mount does not exist yet (see [Status](#status)).
 
@@ -80,25 +84,25 @@ flowchart LR
     bridge <--> lora[("Meshtastic LoRa mesh")]
 ```
 
-Key points of that contract:
+The contract, point by point:
 
-- The federation remote name is **`user-mesh`**; the exposed module is
-  **`./routes`**, resolving to `USER_MESH_ROUTES`. The host looks them up by
-  these exact strings, so renaming either breaks the mount.
+- The federation remote name is **`user-mesh`**. The exposed module is
+  **`./routes`**, which resolves to `USER_MESH_ROUTES`. The host looks them up by
+  these exact strings. Rename either and the mount breaks.
 - Shared dependencies (Angular, RxJS, etc.) and the RxJS-subpath skip list live
   in `federation-base.js`. Each HugMesh remote carries its own copy of the same
-  pattern (`hugmesh-mod-ui` has one), so a dependency-sharing mismatch (a classic
-  "shared is not a function" runtime failure) is fixed in one file per repo
-  instead of inline in each config.
+  pattern (`hugmesh-mod-ui` has one). A dependency-sharing mismatch (the classic
+  "shared is not a function" runtime failure) is then fixed in one file per repo,
+  not inline in each config.
 - The browser never holds a bearer token. Every request goes through
-  `fetch(url, { credentials: 'include' })`, which rides the `HttpOnly` session
-  cookie the login flow sets; the gateway exchanges that cookie for an upstream
+  `fetch(url, { credentials: 'include' })`, which sends the `HttpOnly` session
+  cookie the login flow sets. The gateway exchanges that cookie for an upstream
   bearer token server-side.
 - Access is gated in three independent layers: the gateway's route-access rule
   for `/bff/mesh/**` (`ROLE_MESH`), the mesh BFF's own role check on every
-  endpoint, and this remote's client-side `meshGuard` (a UX nicety, not a
-  security boundary — see [Access control](#access-control)). A route-access rule
-  for the `/user-mesh/**` page path is planned and does not exist yet.
+  endpoint, and this remote's client-side `meshGuard`. The guard is a UX nicety,
+  not a security boundary (see [Access control](#access-control)). A route-access
+  rule for the `/user-mesh/**` page path is planned and does not exist yet.
 
 Related HugMesh repositories:
 
@@ -122,28 +126,27 @@ All three are declared behind `meshGuard` in `src/app/user-mesh.routes.ts`.
 
 ## Access control
 
-Viewing the mesh dashboard requires the `mesh` Casdoor role (or the superset
-`admin` / `superadmin`). This is enforced in three places, in order of
-authority:
+Viewing the mesh dashboard requires the `mesh` Casdoor role, or the superset
+`admin` / `superadmin`. Three places enforce this, in order of authority:
 
 1. The gateway's route-access rule for `/bff/mesh/**` (`ROLE_MESH`). A matching
    rule for the `/user-mesh/**` page path is planned; the seed has none today.
 2. `hugmesh-mesh-bff-api`'s own `@PreAuthorize("hasAnyRole('MESH','ADMIN','SUPERADMIN')")`
    check on every `/bff/mesh/**` endpoint.
-3. This remote's `meshGuard` (`src/app/mesh.guard.ts`), which reads the shared
+3. This remote's `meshGuard` (`src/app/mesh.guard.ts`). It reads the shared
    `SessionService` and redirects an unauthorized caller to `/login` before any
    mesh view renders.
 
-The guard exists purely so an unauthorized user isn't shown a view they can't
-use — the first two layers are the actual security boundary.
+The guard only spares an unauthorized user a view they cannot use. The first two
+layers are the security boundary.
 
 ## Data model
 
 `MeshBffService` (`src/app/mesh-bff.service.ts`) is a `BehaviorSubject`-backed
-client for the mesh backend-for-frontend. It never throws: a failed read leaves
-the last-known-good list in place and publishes a human-readable degradation
-note on a companion observable, so a page can distinguish "the mesh is empty"
-from "the mesh backend is unreachable."
+client for the mesh backend-for-frontend. It never throws. A failed read leaves
+the last good list in place and publishes a readable note on a companion
+observable. A page can then tell "the mesh is empty" from "the mesh backend is
+unreachable."
 
 | Method | Endpoint | Returns |
 |---|---|---|
@@ -165,19 +168,19 @@ from "the mesh backend is unreachable."
 | `online` | `boolean` | Server-derived; re-derived locally as a fallback |
 | `registeredTo` | `string \| null` | Owner's localpart, only when the owner's visibility settings permit it |
 
-Every field except `nodeId` is treated as **untrusted radio telemetry** relayed
-by the bridge — it is best-effort and not cryptographically authenticated.
+Treat every field except `nodeId` as **untrusted radio telemetry**. The bridge
+relays it. It is best-effort and not cryptographically authenticated.
 `mesh-format.ts` is the pure, dependency-free module that parses, clamps and
-formats these fields (avatar-badge colour derived from the node number,
-battery/signal quality buckets, relative "last heard" time, node-id
-normalization) and is designed to be unit-tested without a `TestBed`. Its
-presentation conventions (node-number → RGB avatar, the 101 = "powered" battery
-marker, the SNR-to-quality mapping) deliberately match the official Meshtastic
-web client's, so a Meshtastic user recognizes their own mesh here.
+formats these fields: avatar-badge colour from the node number, battery and
+signal quality buckets, relative "last heard" time, node-id normalization. You
+can unit-test it without a `TestBed`. Its presentation conventions (node-number
+→ RGB avatar, the 101 = "powered" battery marker, the SNR-to-quality mapping)
+deliberately match the official Meshtastic web client's, so a Meshtastic user
+recognizes their own mesh here.
 
-`MeshRoom` is smaller — `roomId`, the bridging `device`, and the LoRa
-`meshChannel` index it carries (`meshChannelLabel()` shows index `0` as
-`Primary/Broadcast` and any other index as `Channel N`).
+`MeshRoom` is smaller: `roomId`, the bridging `device`, and the LoRa
+`meshChannel` index it carries. `meshChannelLabel()` shows index `0` as
+`Primary/Broadcast` and any other index as `Channel N`.
 
 ## Getting started
 
@@ -199,8 +202,8 @@ npm start
 ```
 
 This serves a minimal dev shell (not the production host) at
-`http://localhost:4210`, with `USER_MESH_ROUTES` mounted at the root so the
-dashboard can be browsed without the HugMesh host shell. Until the three view
+`http://localhost:4210`, with `USER_MESH_ROUTES` mounted at the root. You can
+browse the dashboard without the HugMesh host shell. Until the three view
 components exist, it does not compile (see [Status](#status)).
 
 ### Build
@@ -219,16 +222,16 @@ npm test          # single run, headless Chrome
 npm run test:watch # interactive watch mode
 ```
 
-Karma/Jasmine is configured (`karma.conf.js`); no spec files exist yet (see
+Karma/Jasmine is configured (`karma.conf.js`). No spec files exist yet (see
 [Status](#status)).
 
 ## Configuration
 
-This remote reads one optional runtime global, `__SNAP_BFF_URL__`, which the
-host shell may inject before federation initializes to point a given deployment
-at a non-default backend (see `src/app/runtime-config.d.ts`). Left unset, all
-BFF calls are same-origin — the platform gateway is expected to proxy
-`/bff/mesh/**` to `hugmesh-mesh-bff-api`.
+This remote reads one optional runtime global, `__SNAP_BFF_URL__`. The host shell
+may inject it before federation initializes, to point a deployment at a
+non-default backend (see `src/app/runtime-config.d.ts`). Left unset, all BFF
+calls are same-origin. The platform gateway is expected to proxy `/bff/mesh/**`
+to `hugmesh-mesh-bff-api`.
 
 ## Project structure
 
@@ -253,43 +256,42 @@ nginx.conf                  # CORS + security headers for the built remote
 
 ## Accessibility
 
-The UI baseline in `src/styles.scss` targets WCAG 2.1 AA/AAA: a skip link, a
-visible two-layer focus ring, underlined links (never colour-only), 44px
-minimum touch targets on coarse pointers (touch screens), `prefers-reduced-motion`
-and `prefers-contrast` support. `mesh-format.ts` supplies the text descriptions
-for statuses otherwise conveyed by colour alone (battery level, signal quality);
-the views that show them are not built yet. The styles copy the baseline used by
-HugMesh's other frontends so the experience is consistent whether a surface is
-reached standalone or through the host shell.
+The UI baseline in `src/styles.scss` targets WCAG 2.1 AA/AAA. It has a skip link,
+a visible two-layer focus ring, underlined links (never colour alone), 44px
+minimum touch targets on coarse pointers (touch screens), and
+`prefers-reduced-motion` and `prefers-contrast` support. `mesh-format.ts`
+supplies the text descriptions for statuses otherwise shown by colour alone
+(battery level, signal quality). The views that show them are not built yet. The
+styles copy the baseline of HugMesh's other frontends, so a surface looks and
+behaves the same standalone or through the host shell.
 
 ## Deployment
 
-The `Dockerfile` is a two-stage build: `npm ci && npm run build:user-mesh` on
-`node:24-alpine`, then the static output is served from `nginx:1.27-alpine`.
-`nginx.conf` adds the CORS header the host shell needs to fetch this remote's
-`remoteEntry.json` and chunks cross-origin, a baseline set of security headers
-(`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, HSTS), and a
+The `Dockerfile` is a two-stage build. The first stage runs
+`npm ci && npm run build:user-mesh` on `node:24-alpine`. The second serves the
+static output from `nginx:1.27-alpine`. `nginx.conf` adds the CORS header the
+host shell needs to fetch this remote's `remoteEntry.json` and chunks
+cross-origin. It also sets a baseline of security headers
+(`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, HSTS) and a
 `/healthz` endpoint for readiness checks.
 
 A manual-dispatch GitHub Actions workflow (`.github/workflows/release.yml`)
-builds and pushes the image to `ghcr.io/hugmesh/hugmesh-user-mesh-ui`; it
-has no automatic trigger and is run by hand when a maintainer is ready to cut a
-release.
+builds and pushes the image to `ghcr.io/hugmesh/hugmesh-user-mesh-ui`. It has no
+automatic trigger. A maintainer runs it by hand to cut a release.
 
 ## Contributing
 
-Contributions are welcome. The general flow:
+Contributions are welcome. The usual flow:
 
 1. Fork the repository and create a feature branch.
-2. Make your change, keeping new logic in pure, unit-testable modules where
+2. Make your change. Keep new logic in pure, unit-testable modules where
    possible (see `mesh-format.ts` for the house style).
 3. Run `npm test` and make sure the build (`npm run build`) still succeeds.
 4. Open a pull request describing what changed and why.
 
-If you're touching the federation contract (remote name, exposed module path,
-shared-deps list), please call that out explicitly in the PR description — a
-mismatch with the host shell's expectations breaks the mesh dashboard for every
-user.
+If you touch the federation contract (remote name, exposed module path,
+shared-deps list), say so in the PR description. A mismatch with the host
+shell's expectations breaks the mesh dashboard for every user.
 
 ## License
 
