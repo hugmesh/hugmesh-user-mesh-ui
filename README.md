@@ -7,9 +7,10 @@ micro-frontend that gives every HugMesh user a view onto their
 reachable, which radios they've claimed, and which chat rooms are bridged onto the
 mesh.
 
-It ships as an independently built, independently deployed **remote** module that
-the platform's host shell loads at runtime — it is not a standalone product and is
-not meant to be run in production on its own.
+It is built as an independently built, independently deployed **remote** module
+for the platform's host shell to load at runtime — it is not a standalone product
+and is not meant to be run in production on its own. The host shell does not
+mount it yet (see [Status](#status)).
 
 ## What it does
 
@@ -44,16 +45,26 @@ the next milestone.
 - [ ] Unit test suite (the Karma/Jasmine harness is wired up; specs are not yet
       written)
 
-The three routes below are declared and guarded already; until their components
-land, a production build of this remote will fail to resolve them.
+The three routes below are declared and guarded already, but
+`src/app/user-mesh.routes.ts` imports `nodes.component`, `my-devices.component`
+and `channels.component`, and none of those files exist. Until they land, every
+build of this remote fails, and so does the Docker image build.
+
+The remote is also not wired into the platform. On the 2026-10-07 `origin/main`
+of the sibling repos, `hugmesh-host-shell` has no `user-mesh` entry, the
+fe-gateway has no `/user-mesh` route, and the route-access seed has no
+`/user-mesh/**` row (only `/bff/mesh/**`, which needs `ROLE_MESH`).
+`hugmesh-generator` carries a test that asserts this absence
+(`tests/e2e/features/mined-identity/mesh-remote-unmounted.feature`); the PR that
+adds the three components must delete that test and add the route and the row.
 
 ## How it fits into HugMesh
 
-This remote is loaded by the platform's host shell over
+This remote is meant to be loaded by the platform's host shell over
 [`@angular-architects/native-federation`](https://www.npmjs.com/package/@angular-architects/native-federation),
-not bundled into it at build time. The host fetches this remote's manifest and
-`remoteEntry.json` at runtime and mounts its single exposed module at
-`/user-mesh`.
+not bundled into it at build time. The intended contract: the host fetches this
+remote's manifest and `remoteEntry.json` at runtime and mounts its single exposed
+module at `/user-mesh`. That mount does not exist yet (see [Status](#status)).
 
 ```mermaid
 flowchart LR
@@ -64,9 +75,9 @@ flowchart LR
     end
 
     remote -- "fetch, credentials: include" --> gateway["Platform gateway<br/>/bff/mesh/**"]
-    gateway --> bff["hugmesh-mesh-bff-api"]
-    bff --> bridge["Mesh-to-Matrix bridge"]
-    bridge --> lora[("Meshtastic LoRa mesh")]
+    gateway --> bff["hugmesh-mesh-bff-api<br/>(cached directory)"]
+    bridge["meshbridge<br/>(mesh-to-Matrix bridge)"] -. "optional snapshot push" .-> bff
+    bridge <--> lora[("Meshtastic LoRa mesh")]
 ```
 
 Key points of that contract:
@@ -75,17 +86,19 @@ Key points of that contract:
   **`./routes`**, resolving to `USER_MESH_ROUTES`. The host looks them up by
   these exact strings, so renaming either breaks the mount.
 - Shared dependencies (Angular, RxJS, etc.) and the RxJS-subpath skip list live
-  in `federation-base.js`, shared with every other HugMesh remote so a
-  dependency-sharing mismatch (a classic "shared is not a function" runtime
-  failure) is caught in one place instead of per repo.
+  in `federation-base.js`. Each HugMesh remote carries its own copy of the same
+  pattern (`hugmesh-mod-ui` has one), so a dependency-sharing mismatch (a classic
+  "shared is not a function" runtime failure) is fixed in one file per repo
+  instead of inline in each config.
 - The browser never holds a bearer token. Every request goes through
   `fetch(url, { credentials: 'include' })`, which rides the `HttpOnly` session
   cookie the login flow sets; the gateway exchanges that cookie for an upstream
   bearer token server-side.
 - Access is gated in three independent layers: the gateway's route-access rule
-  for `/user-mesh/**`, the mesh BFF's own role check on every endpoint, and this
-  remote's client-side `meshGuard` (a UX nicety, not a security boundary — see
-  [Access control](#access-control)).
+  for `/bff/mesh/**` (`ROLE_MESH`), the mesh BFF's own role check on every
+  endpoint, and this remote's client-side `meshGuard` (a UX nicety, not a
+  security boundary — see [Access control](#access-control)). A route-access rule
+  for the `/user-mesh/**` page path is planned and does not exist yet.
 
 Related HugMesh repositories:
 
@@ -113,14 +126,15 @@ Viewing the mesh dashboard requires the `mesh` Casdoor role (or the superset
 `admin` / `superadmin`). This is enforced in three places, in order of
 authority:
 
-1. The gateway's route-access rule for `/user-mesh/**`.
-2. `hugmesh-mesh-bff-api`'s own `@PreAuthorize` check on every `/bff/mesh/**`
-   endpoint.
+1. The gateway's route-access rule for `/bff/mesh/**` (`ROLE_MESH`). A matching
+   rule for the `/user-mesh/**` page path is planned; the seed has none today.
+2. `hugmesh-mesh-bff-api`'s own `@PreAuthorize("hasAnyRole('MESH','ADMIN','SUPERADMIN')")`
+   check on every `/bff/mesh/**` endpoint.
 3. This remote's `meshGuard` (`src/app/mesh.guard.ts`), which reads the shared
-   `SessionService` and redirects an unauthorized caller to `/login` before the
-   mesh UI bundle is even mounted.
+   `SessionService` and redirects an unauthorized caller to `/login` before any
+   mesh view renders.
 
-The guard exists purely so an unauthorized user isn't shown a bundle they can't
+The guard exists purely so an unauthorized user isn't shown a view they can't
 use — the first two layers are the actual security boundary.
 
 ## Data model
@@ -162,14 +176,14 @@ marker, the SNR-to-quality mapping) deliberately match the official Meshtastic
 web client's, so a Meshtastic user recognizes their own mesh here.
 
 `MeshRoom` is smaller — `roomId`, the bridging `device`, and the LoRa
-`meshChannel` index it carries (channel `0` is always Meshtastic's
-`Primary/Broadcast` channel).
+`meshChannel` index it carries (`meshChannelLabel()` shows index `0` as
+`Primary/Broadcast` and any other index as `Channel N`).
 
 ## Getting started
 
 ### Prerequisites
 
-- Node.js **24.15** or later (Angular CLI 22's minimum)
+- Node.js `^22.22.3`, `^24.15.0` or `>=26.0.0` (the `engines` range of Angular CLI 22; the Dockerfile uses Node 24)
 - npm
 
 ### Install
@@ -186,7 +200,8 @@ npm start
 
 This serves a minimal dev shell (not the production host) at
 `http://localhost:4210`, with `USER_MESH_ROUTES` mounted at the root so the
-dashboard is fully browsable without the HugMesh host shell.
+dashboard can be browsed without the HugMesh host shell. Until the three view
+components exist, it does not compile (see [Status](#status)).
 
 ### Build
 
@@ -204,8 +219,8 @@ npm test          # single run, headless Chrome
 npm run test:watch # interactive watch mode
 ```
 
-Karma/Jasmine is configured (`karma.conf.js`); see [Status](#status) for what's
-covered so far.
+Karma/Jasmine is configured (`karma.conf.js`); no spec files exist yet (see
+[Status](#status)).
 
 ## Configuration
 
@@ -222,7 +237,7 @@ src/
   app/
     mesh-bff.service.ts     # HTTP client for /bff/mesh/**, fail-soft & cached
     mesh-format.ts          # pure formatting/validation helpers (unit-testable)
-    mesh.guard.ts           # client-side ROLE_MESH route guard
+    mesh.guard.ts           # client-side mesh-role route guard
     session.service.ts      # cross-remote session state (localStorage-backed)
     user-mesh.routes.ts     # USER_MESH_ROUTES — the federated exposed module
     app.component.*         # standalone dev-shell only, not used once federated
@@ -240,15 +255,16 @@ nginx.conf                  # CORS + security headers for the built remote
 
 The UI baseline in `src/styles.scss` targets WCAG 2.1 AA/AAA: a skip link, a
 visible two-layer focus ring, underlined links (never colour-only), 44px
-minimum touch targets, `prefers-reduced-motion` and `prefers-contrast` support,
-and paired text descriptions everywhere a status is otherwise conveyed by
-colour alone (battery level, signal quality). This mirrors the baseline shared
-across HugMesh's other frontends so the experience is consistent whether a
-surface is reached standalone or through the host shell.
+minimum touch targets on coarse pointers (touch screens), `prefers-reduced-motion`
+and `prefers-contrast` support. `mesh-format.ts` supplies the text descriptions
+for statuses otherwise conveyed by colour alone (battery level, signal quality);
+the views that show them are not built yet. The styles copy the baseline used by
+HugMesh's other frontends so the experience is consistent whether a surface is
+reached standalone or through the host shell.
 
 ## Deployment
 
-The `Dockerfile` is a two-stage build: `npm ci && npm run build` on
+The `Dockerfile` is a two-stage build: `npm ci && npm run build:user-mesh` on
 `node:24-alpine`, then the static output is served from `nginx:1.27-alpine`.
 `nginx.conf` adds the CORS header the host shell needs to fetch this remote's
 `remoteEntry.json` and chunks cross-origin, a baseline set of security headers
@@ -256,7 +272,7 @@ The `Dockerfile` is a two-stage build: `npm ci && npm run build` on
 `/healthz` endpoint for readiness checks.
 
 A manual-dispatch GitHub Actions workflow (`.github/workflows/release.yml`)
-builds and pushes the image to `ghcr.io/hugmesh-net/hugmesh-user-mesh-ui`; it
+builds and pushes the image to `ghcr.io/hugmesh/hugmesh-user-mesh-ui`; it
 has no automatic trigger and is run by hand when a maintainer is ready to cut a
 release.
 
