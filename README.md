@@ -50,13 +50,14 @@ imports `nodes.component`, `my-devices.component` and `channels.component`, and
 none of those files exist. Until they land, every build of this remote fails,
 and so does the Docker image build.
 
-The remote is also not wired into the platform. On the 2026-10-07 `origin/main`
-of the sibling repos:
+The remote is also not wired into the platform. On the sibling repos'
+`origin/main` as of 2026-10-15:
 
 - `hugmesh-host-shell` has no `user-mesh` entry.
 - The fe-gateway has no `/user-mesh` route.
-- The route-access seed has no `/user-mesh/**` row. It has `/bff/mesh/**`, which
-  needs `ROLE_MESH`.
+- The cluster route-access seed
+  (`hugmesh-generator` `specs/cluster/manifests/route-access/initdb/20-schema.sql`)
+  has no `/user-mesh/**` row. It has `/bff/mesh/**`, which needs `ROLE_MESH`.
 
 `hugmesh-generator` carries a test that asserts this absence
 (`tests/e2e/features/mined-identity/mesh-remote-unmounted.feature`). The PR that
@@ -132,7 +133,8 @@ Viewing the mesh dashboard requires the `mesh` Casdoor role, or the superset
 1. The gateway's route-access rule for `/bff/mesh/**` (`ROLE_MESH`). A matching
    rule for the `/user-mesh/**` page path is planned; the seed has none today.
 2. `hugmesh-mesh-bff-api`'s own `@PreAuthorize("hasAnyRole('MESH','ADMIN','SUPERADMIN')")`
-   check on every `/bff/mesh/**` endpoint.
+   check on every `/bff/mesh/**` endpoint this remote calls. (The
+   `/bff/mesh/internal/**` bridge-sync ingest is `SERVICE`-only instead.)
 3. This remote's `meshGuard` (`src/app/mesh.guard.ts`). It reads the shared
    `SessionService` and redirects an unauthorized caller to `/login` before any
    mesh view renders.
@@ -180,7 +182,8 @@ recognizes their own mesh here.
 
 `MeshRoom` is smaller: `roomId`, the bridging `device`, and the LoRa
 `meshChannel` index it carries. `meshChannelLabel()` shows index `0` as
-`Primary/Broadcast` and any other index as `Channel N`.
+`Primary/Broadcast`, any other non-negative integer as `Channel N`, and anything
+else as `Unknown channel`.
 
 ## Getting started
 
