@@ -278,9 +278,35 @@ cross-origin. It also sets a baseline of security headers
 (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, HSTS) and a
 `/healthz` endpoint for readiness checks.
 
-A manual-dispatch GitHub Actions workflow (`.github/workflows/release.yml`)
-builds and pushes the image to `ghcr.io/hugmesh/hugmesh-user-mesh-ui`. It has no
-automatic trigger. A maintainer runs it by hand to cut a release.
+### Versions and releases
+
+The version lives in `package.json` (and must match `package-lock.json`). It
+follows `MAJOR.MINOR.PATCH-beta.N`. Today it is `0.1.0-beta.1`: 0.1 means a
+scaffold whose image has not yet been built successfully, because of the
+missing view components described under [Status](#status).
+
+The GitHub Actions workflow `.github/workflows/release.yml` builds the image and
+pushes it to `ghcr.io/hugmesh/hugmesh-user-mesh-ui`:
+
+| Trigger | Image tags | GitHub release |
+|---|---|---|
+| push to `main` | `main`, `sha-<12 hex>` | none |
+| push of tag `v<version>` | `<version>`, `beta` (beta versions only), `sha-<12 hex>` | prerelease, never marked latest |
+| manual run on `main` | same as a push to `main` | none |
+| manual run on a `v*` tag | re-runs that release; an image or release that already exists is left alone | |
+
+Any other branch or tag is refused. A tag must equal `v` plus the
+`package.json` version and point at a commit on `main`. A published version tag
+is never overwritten, and `latest` is never pushed. If the app does not build,
+nothing is pushed.
+
+To cut a beta, a maintainer pushes an annotated tag on a commit on `main`, for
+example `git tag -a v0.1.0-beta.1 -m v0.1.0-beta.1 && git push origin
+v0.1.0-beta.1`. The next beta of the same base raises `N`.
+
+The workflow has no pull-request trigger. Its jobs use the self-hosted runner
+only when the repository variable `RUNS_ON_PUBLISH` is set and the run is for
+`main` or a `v*` tag; otherwise they use GitHub-hosted `ubuntu-latest`.
 
 ## Contributing
 
