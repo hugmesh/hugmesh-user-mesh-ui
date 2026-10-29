@@ -2,7 +2,7 @@
  * PURE presentation + untrusted-input helpers for the mesh dashboard. Every
  * function here is side-effect free, clock-injectable where time matters, and
  * has NO Angular dependency, so the whole presentation contract is unit-testable
- * on its own without a TestBed.
+ * on its own (`mesh-format.spec.ts`) without a TestBed.
  *
  * <p>Two things live here:
  *

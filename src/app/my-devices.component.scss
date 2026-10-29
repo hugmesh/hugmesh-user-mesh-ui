@@ -1,0 +1,134 @@
+@use '../styles/tokens' as t;
+@use '../styles/mesh-page' as *;
+
+@include mesh-page;
+
+.hint {
+  max-width: 70ch;
+}
+
+.count {
+  color: var(--hug-text-muted);
+}
+
+.device-list {
+  list-style: none;
+  margin: 1rem 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.device {
+  padding: 1rem;
+  border-radius: t.$radius-md;
+  border: 1px solid var(--hug-border);
+  background: var(--hug-bg-1);
+
+  &.revoked {
+    border-style: dashed;
+  }
+}
+
+.device-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+
+  .name {
+    font-weight: 700;
+  }
+}
+
+.node-id {
+  font-family: t.$font-mono;
+  font-size: 0.9rem;
+  color: var(--hug-text-muted);
+}
+
+.dot {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--hug-text-muted);
+
+  &.online {
+    background: var(--hug-success);
+  }
+}
+
+.revoked-flag {
+  color: var(--hug-error);
+  font-weight: 600;
+}
+
+.device-status {
+  margin: 0.5rem 0;
+  color: var(--hug-text-muted);
+}
+
+.device-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 1rem;
+
+  .visibility {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  select {
+    min-height: 2.25rem;
+    padding: 0 0.5rem;
+    border-radius: t.$radius-sm;
+    border: 1px solid var(--hug-border);
+    background: var(--hug-bg-0);
+    color: var(--hug-text);
+    font: inherit;
+  }
+}
+
+.claim {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-radius: t.$radius-md;
+  border: 1px solid var(--hug-border);
+  background: var(--hug-bg-1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 32rem;
+
+  h3 {
+    margin: 0;
+  }
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  input {
+    min-height: 2.75rem;
+    padding: 0 0.75rem;
+    border-radius: t.$radius-sm;
+    border: 1px solid var(--hug-border);
+    background: var(--hug-bg-0);
+    color: var(--hug-text);
+    font: inherit;
+  }
+
+  .hint {
+    margin: 0;
+  }
+
+  button {
+    align-self: flex-start;
+  }
+}

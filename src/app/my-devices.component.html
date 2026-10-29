@@ -1,0 +1,115 @@
+<section class="hug-mesh-page" data-testid="mesh-devices-view" aria-labelledby="mesh-devices-heading">
+  <hug-mesh-nav />
+  <header class="page-head">
+    <h2 id="mesh-devices-heading">My devices</h2>
+    <p class="lead">
+      Register your Meshtastic radio's node id so messages from that radio appear under your
+      name in mesh-enabled rooms. Caution: LoRa node ids are not cryptographically
+      authenticated — any radio can transmit as any node id.
+    </p>
+  </header>
+
+  @if (note()) {
+    <p class="degraded" role="alert" data-testid="mesh-devices-note">{{ note() }}</p>
+  }
+
+  <!-- Shared describedby targets, announced from every row without repeating copy. -->
+  <p id="mesh-devices-visibility-help" class="hint" data-testid="mesh-devices-visibility-help">
+    Visibility controls who can see this radio's owner and status: Private is only you;
+    Friends is stored but currently behaves like Private for everyone else; Channels shows it to
+    members of the mesh-enabled rooms it reaches.
+  </p>
+  <p id="mesh-devices-release-help" class="hint" data-testid="mesh-devices-release-help">
+    Releasing a device stops linking its radio messages to your name; someone else can then
+    claim the node id.
+  </p>
+
+  @if (loading()) {
+    <p class="count" role="status" aria-live="polite" data-testid="mesh-devices-loading">Loading your devices…</p>
+  } @else if (devices().length === 0) {
+    <p class="empty" data-testid="mesh-devices-empty">
+      You have not registered a radio yet. Add one below.
+    </p>
+  }
+
+  @if (devices().length > 0) {
+    <ul class="device-list" data-testid="mesh-devices-list" aria-label="Your registered mesh devices">
+      @for (d of devices(); track d.id) {
+        <li class="device" [class.revoked]="d.state === 'revoked'" [attr.data-testid]="'mesh-device-' + d.id">
+          <div class="device-head">
+            <span class="dot" [class.online]="online(d)" aria-hidden="true"></span>
+            <span class="name">{{ deviceName(d) }}</span>
+            <code class="node-id">{{ d.nodeId }}</code>
+            <span class="sr">{{ online(d) ? 'online' : 'offline' }}</span>
+            @if (d.state === 'revoked') {
+              <span class="revoked-flag" [attr.data-testid]="'mesh-device-revoked-' + d.id">
+                Revoked{{ d.revokeReason ? ' — ' + d.revokeReason : '' }}
+              </span>
+            }
+          </div>
+          <p class="device-status" [attr.data-testid]="'mesh-device-status-' + d.id">
+            <span>{{ online(d) ? 'Online' : 'Offline' }} · last heard {{ lastHeard(d) }}</span>
+            @if (batteryLabel(d); as label) {
+              <span> · <span class="level" [attr.data-level]="batteryLevel(d)" aria-hidden="true">{{ label }}</span><span class="sr">{{ batterySr(d) }}</span></span>
+            }
+            @if (signalLevel(d); as level) {
+              <span> · <span class="level" [attr.data-level]="level" aria-hidden="true">signal {{ level }}</span><span class="sr">{{ signalSr(d) }}</span></span>
+            }
+            @if (hops(d); as route) {
+              <span> · {{ route }}</span>
+            }
+          </p>
+          <div class="device-actions">
+            <label class="visibility" [attr.for]="'mesh-device-visibility-' + d.id">Visibility
+              <select [id]="'mesh-device-visibility-' + d.id"
+                      [attr.data-testid]="'mesh-device-visibility-' + d.id"
+                      [value]="d.visibility" [disabled]="d.state === 'revoked'"
+                      aria-describedby="mesh-devices-visibility-help"
+                      (change)="onVisibilityChange(d, $event)">
+                @for (v of visibilities; track v) {
+                  <option [value]="v" [selected]="v === d.visibility">{{ visibilityLabel(v) }}</option>
+                }
+              </select>
+            </label>
+            <button type="button" class="row-action"
+                    [attr.data-testid]="'mesh-device-release-' + d.id"
+                    [attr.aria-label]="'Release mesh device ' + deviceName(d)"
+                    aria-describedby="mesh-devices-release-help"
+                    (click)="release(d)">Release</button>
+          </div>
+        </li>
+      }
+    </ul>
+  }
+
+  <form class="claim" (ngSubmit)="claim()" data-testid="mesh-claim-form" aria-labelledby="mesh-claim-heading">
+    <h3 id="mesh-claim-heading">Register a radio</h3>
+    <label for="mesh-claim-node">Node id
+      <input id="mesh-claim-node" name="nodeId" data-testid="mesh-claim-node" [(ngModel)]="nodeIdInput"
+             placeholder="!a1b2c3d4" autocomplete="off" aria-describedby="mesh-claim-node-help"
+             [disabled]="claiming()" required />
+    </label>
+    <p id="mesh-claim-node-help" class="hint">
+      Your radio's 8-hex-digit Meshtastic node id, with or without the leading "!" — for
+      example a1b2c3d4 or !A1B2C3D4.
+    </p>
+    <label for="mesh-claim-label">Label (optional)
+      <input id="mesh-claim-label" name="label" data-testid="mesh-claim-label" [(ngModel)]="labelInput"
+             [attr.maxlength]="maxLabelLength" placeholder="e.g. backpack radio"
+             aria-describedby="mesh-claim-label-help" [disabled]="claiming()" />
+    </label>
+    <p id="mesh-claim-label-help" class="hint">
+      A name for this radio, shown only in this list (up to {{ maxLabelLength }} characters).
+    </p>
+    <button type="submit" data-testid="mesh-claim-submit" [disabled]="claiming()">
+      {{ claiming() ? 'Registering…' : 'Register device' }}
+    </button>
+  </form>
+
+  @if (error()) {
+    <p class="field-error" role="alert" data-testid="mesh-devices-error">{{ error() }}</p>
+  }
+  @if (status()) {
+    <p class="status-note" role="status" aria-live="polite" data-testid="mesh-devices-status">{{ status() }}</p>
+  }
+</section>

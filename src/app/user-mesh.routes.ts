@@ -5,13 +5,6 @@ import { ChannelsComponent } from './channels.component';
 import { meshGuard } from './mesh.guard';
 
 /**
- * ⚠️ NOT YET BUILDABLE. This module wires up the routes below, but the three
- * component imports above (nodes.component, my-devices.component,
- * channels.component) currently point at files that DO NOT EXIST in this repo.
- * This is a WIP scaffold — see the README. Building it will fail until those
- * components land; the routing shape here is the committed intent, not a
- * working module.
- *
  * Routes exposed by the Mesh dashboard native-federation remote (`./routes`).
  * The hugmesh.net host mounts these at `/user-mesh`, giving:
  *
@@ -22,12 +15,15 @@ import { meshGuard } from './mesh.guard';
  * - `/user-mesh/channels` → {@link ChannelsComponent}  — the mesh-enabled chat
  *   rooms and which LoRa channel each one bridges.
  *
- * ROLE_MESH is enforced upstream by the `gateway_route_access` row on
- * `/user-mesh/**` and again server-side by the mesh-bff-api
- * (`hasAnyRole('MESH','ADMIN','SUPERADMIN')`) and user-bff-api
- * (`hasRole('USER')`). {@link meshGuard} is applied here as `canActivate` for
- * defence-in-depth: it prevents loading the mesh UI for callers who cannot use
- * it, for both the host-mounted and standalone / dev-shell builds.
+ * ROLE_MESH is enforced server-side by the mesh-bff-api
+ * (`hasAnyRole('MESH','ADMIN','SUPERADMIN')` on `/bff/mesh/**`) and ROLE_USER
+ * by user-bff-api (`hasRole('USER')` on `/bff/user/**`); the platform's
+ * `gateway_route_access` seed gates `/bff/mesh/**` the same way. A row for the
+ * UI mount `/user-mesh/**` itself, and the host-shell mount, are expected to
+ * land together with the host-side wiring and are NOT part of this repo.
+ * {@link meshGuard} is applied here as `canActivate` for defence-in-depth: it
+ * prevents loading the mesh UI for callers who cannot use it, for both the
+ * host-mounted and standalone / dev-shell builds.
  */
 export const USER_MESH_ROUTES: Routes = [
   { path: '', component: NodesComponent, canActivate: [meshGuard] },

@@ -1,0 +1,148 @@
+@use '../styles/tokens' as t;
+@use '../styles/mesh-page' as *;
+
+@include mesh-page;
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 1rem;
+  margin: 1rem 0;
+
+  .filter {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1 1 16rem;
+
+    input {
+      min-height: 2.75rem;
+      padding: 0 0.75rem;
+      border-radius: t.$radius-sm;
+      border: 1px solid var(--hug-border);
+      background: var(--hug-bg-1);
+      color: var(--hug-text);
+      font: inherit;
+    }
+  }
+
+  .count {
+    margin: 0;
+    color: var(--hug-text-muted);
+    min-height: 2.75rem;
+    display: flex;
+    align-items: center;
+  }
+}
+
+.table-wrap {
+  // `position: relative` is load-bearing: the global `.sr` utility is
+  // position:absolute, so without a positioned ancestor the hidden spoken
+  // labels in the cells escape the overflow clip and widen the whole document
+  // on narrow screens (measured: 1070px of sideways scroll at 390px wide).
+  position: relative;
+  overflow-x: auto;
+}
+
+// Only shown when the table is wider than the screen (see the media query):
+// a plain-text hint that the rest of the columns are a swipe away.
+.scroll-hint {
+  display: none;
+  margin: 0 0 0.5rem;
+  color: var(--hug-text-muted);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 48rem) {
+  .scroll-hint {
+    display: block;
+  }
+}
+
+.nodes {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    text-align: left;
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--hug-border);
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  thead th {
+    color: var(--hug-text-muted);
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  tr.offline td,
+  tr.offline .names {
+    color: var(--hug-text-muted);
+  }
+
+  .node-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 400;
+  }
+
+  .names {
+    display: flex;
+    flex-direction: column;
+
+    .name {
+      font-weight: 700;
+      color: var(--hug-text);
+    }
+  }
+
+  .node-id {
+    font-family: t.$font-mono;
+    font-size: 0.85rem;
+    color: var(--hug-text-muted);
+  }
+
+  .avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    font-family: t.$font-mono;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex: none;
+
+    &.untinted {
+      background: var(--hug-bg-2);
+      color: var(--hug-text);
+    }
+  }
+
+  .dot {
+    display: inline-block;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    margin-right: 0.4rem;
+    background: var(--hug-text-muted);
+
+    &.online {
+      background: var(--hug-success);
+    }
+  }
+
+  .owner {
+    color: var(--hug-accent-soft);
+  }
+
+  .muted {
+    color: var(--hug-text-muted);
+  }
+}

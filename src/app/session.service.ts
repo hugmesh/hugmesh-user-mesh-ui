@@ -67,8 +67,9 @@ export class SessionService {
    * Used by {@link meshGuard} to allow/deny entry.
    *
    * <p>NOTE the platform role FLOOR for this remote is ROLE_MESH: the
-   * `gateway_route_access` row for `/user-mesh/**` gates on it, and the
-   * capabilities projection advertises `requiresRole: "ROLE_MESH"`. Admin and
+   * `gateway_route_access` row for `/bff/mesh/**` gates on it (the row for the
+   * `/user-mesh/**` page path is still to be seeded with the host-side wiring),
+   * and the capabilities projection advertises `requiresRole: "ROLE_MESH"`. Admin and
    * superadmin are accepted here only because the BFF accepts them (they are a
    * superset), never as a substitute for the row.
    */

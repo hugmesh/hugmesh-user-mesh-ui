@@ -1,0 +1,57 @@
+<section class="hug-mesh-page" data-testid="mesh-channels-view" aria-labelledby="mesh-channels-heading">
+  <hug-mesh-nav />
+  <header class="page-head">
+    <h2 id="mesh-channels-heading">Mesh channels</h2>
+    <p class="lead">
+      Chat rooms that are bridged onto the LoRa mesh, and the radio channel each one uses.
+      Messages sent in these rooms also go out over the air, and radio messages on that
+      channel show up in the room.
+    </p>
+  </header>
+
+  <div class="toolbar">
+    <p class="count" data-testid="mesh-channels-count" role="status" aria-live="polite">
+      @if (loading()) {
+        Loading the channel list…
+      } @else {
+        {{ rooms().length }} mesh-enabled {{ rooms().length === 1 ? 'room' : 'rooms' }}
+      }
+    </p>
+    <button type="button" data-testid="mesh-channels-reload" (click)="reload()" [disabled]="loading()">Reload</button>
+  </div>
+
+  @if (note()) {
+    <p class="degraded" role="alert" data-testid="mesh-channels-note">{{ note() }}</p>
+  }
+
+  @if (!loading() && rooms().length === 0 && !note()) {
+    <p class="empty" data-testid="mesh-channels-empty">
+      No rooms are bridged onto the mesh yet. A room becomes mesh-enabled through the bridge's
+      configuration; once one is, it appears here.
+    </p>
+  }
+
+  @for (group of groups(); track group.channel) {
+    <section class="channel" [attr.data-testid]="'mesh-channel-' + groupKey(group.channel)"
+             [attr.aria-labelledby]="'mesh-channel-heading-' + groupKey(group.channel)">
+      <h3 [id]="'mesh-channel-heading-' + groupKey(group.channel)">
+        {{ group.label }}
+        @if (group.channel !== null) {
+          <span class="index">LoRa channel index {{ group.channel }}</span>
+        }
+      </h3>
+      <ul class="rooms">
+        @for (room of group.rooms; track room.roomId) {
+          <li class="room" [attr.data-testid]="'mesh-room-' + room.roomId">
+            <code class="room-id">{{ room.roomId }}</code>
+            @if (room.device) {
+              <span class="bridge">bridged by <code>{{ room.device }}</code></span>
+            } @else {
+              <span class="bridge muted">bridge radio unknown</span>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+  }
+</section>

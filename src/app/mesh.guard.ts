@@ -10,9 +10,11 @@ import { SessionService } from './session.service';
  *
  * The guard uses {@link SessionService.isMesh}, which mirrors the mesh-bff-api's
  * server-side `hasAnyRole('MESH','ADMIN','SUPERADMIN')` check and the
- * `gateway_route_access` ROLE_MESH row on `/user-mesh/**`. This is
- * DEFENCE-IN-DEPTH: the gateway + the BFFs remain the authoritative gates; the
- * guard simply prevents loading the mesh UI bundle for users who cannot use it.
+ * `gateway_route_access` ROLE_MESH row on `/bff/mesh/**` (the row for the
+ * `/user-mesh/**` page path is part of the host-side wiring and is not seeded
+ * yet). This is DEFENCE-IN-DEPTH: the gateway + the BFFs remain the
+ * authoritative gates; the guard simply prevents loading the mesh UI bundle for
+ * users who cannot use it.
  *
  * @see {@link SessionService.isMesh} — the derived role signal this guard consults.
  * @see {@link USER_MESH_ROUTES}      — where this guard is applied.
