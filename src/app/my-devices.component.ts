@@ -13,6 +13,7 @@ import {
   meshSignalScreenReaderLabel,
 } from './mesh-format';
 import {
+  MESH_DEVICE_VISIBILITIES,
   MeshDevice,
   MeshDeviceVisibility,
   UserMeshBffService,
@@ -44,7 +45,7 @@ export class MyDevicesComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly maxLabelLength = MAX_MESH_LABEL_LENGTH;
-  readonly visibilities: readonly MeshDeviceVisibility[] = ['private', 'friends', 'channels'];
+  readonly visibilities = MESH_DEVICE_VISIBILITIES;
 
   /** My devices, mirrored from the service (with an optimistic overlay during a visibility change). */
   readonly devices = signal<MeshDevice[]>([]);
@@ -58,6 +59,12 @@ export class MyDevicesComponent implements OnInit {
   readonly status = signal('');
   /** `true` while a claim is in flight (the form is disabled meanwhile). */
   readonly claiming = signal(false);
+  /**
+   * The device ids with a write (visibility change or release) in flight. The
+   * row's controls are disabled meanwhile, so one row never has two writes
+   * racing each other — and a double-clicked Release sends ONE request.
+   */
+  readonly busy = signal<ReadonlySet<string>>(new Set());
 
   nodeIdInput = '';
   labelInput = '';
@@ -100,40 +107,64 @@ export class MyDevicesComponent implements OnInit {
     }
   }
 
-  /** Release one of my devices (works on revoked rows too). */
+  /** Release one of my devices (works on revoked rows too). Ignored while that row is busy. */
   async release(device: MeshDevice): Promise<void> {
+    if (this.busy().has(device.id)) return;
+    this.setBusy(device.id, true);
     this.error.set('');
     this.status.set('');
-    const result = await this.bff.release(device.id);
-    if (result.ok) {
-      this.status.set(`Released ${this.deviceName(device)}.`);
-    } else {
-      this.error.set(result.note);
+    try {
+      const result = await this.bff.release(device.id);
+      if (result.ok) {
+        this.status.set(`Released ${this.deviceName(device)}.`);
+      } else {
+        this.error.set(result.note);
+      }
+    } finally {
+      this.setBusy(device.id, false);
     }
   }
 
   /**
    * Change a device's visibility OPTIMISTICALLY: the select reflects the choice
-   * at once and is rolled back (list and control both) if the server refuses.
+   * at once (and is disabled until the server answers) and is rolled back — the
+   * ONE row and its control, not the whole list — if the server refuses.
    */
   async onVisibilityChange(device: MeshDevice, event: Event): Promise<void> {
     const select = event.target as HTMLSelectElement;
     const value = select.value;
     if (!isMeshDeviceVisibility(value) || value === device.visibility) return;
-    const before = this.devices();
-    this.devices.set(before.map((d) => (d.id === device.id ? { ...d, visibility: value } : d)));
+    if (this.busy().has(device.id)) return;
+    this.setBusy(device.id, true);
+    this.devices.update((list) => list.map((d) => (d.id === device.id ? { ...d, visibility: value } : d)));
     this.error.set('');
     this.status.set('');
-    const result = await this.bff.setVisibility(device.id, value);
-    if (result.ok) {
-      this.status.set(`${this.deviceName(device)} is now ${value}.`);
-    } else {
-      this.devices.set(before);
-      // The native control keeps the user's pick even after the signal reverts;
-      // put it back explicitly so what is shown matches what is stored.
-      select.value = device.visibility;
-      this.error.set(result.note);
+    try {
+      const result = await this.bff.setVisibility(device.id, value);
+      if (result.ok) {
+        this.status.set(`${this.deviceName(device)} is now ${value}.`);
+      } else {
+        // Roll back THIS row in the CURRENT list: a snapshot taken before the
+        // await would resurrect whatever another write removed meanwhile.
+        this.devices.update((list) =>
+          list.map((d) => (d.id === device.id ? { ...d, visibility: device.visibility } : d)));
+        // The native control keeps the user's pick even after the signal reverts;
+        // put it back explicitly so what is shown matches what is stored.
+        select.value = device.visibility;
+        this.error.set(result.note);
+      }
+    } finally {
+      this.setBusy(device.id, false);
     }
+  }
+
+  /** Mark one device's write as in flight (or finished). Always publishes a NEW set. */
+  private setBusy(id: string, inFlight: boolean): void {
+    this.busy.update((ids) => {
+      const next = new Set(ids);
+      if (inFlight) next.add(id); else next.delete(id);
+      return next;
+    });
   }
 
   // ── Presentation helpers ──

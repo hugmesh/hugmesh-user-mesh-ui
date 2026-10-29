@@ -26,7 +26,7 @@
 
   @if (loading()) {
     <p class="count" role="status" aria-live="polite" data-testid="mesh-devices-loading">Loading your devices…</p>
-  } @else if (devices().length === 0) {
+  } @else if (devices().length === 0 && !note()) {
     <p class="empty" data-testid="mesh-devices-empty">
       You have not registered a radio yet. Add one below.
     </p>
@@ -63,7 +63,7 @@
             <label class="visibility" [attr.for]="'mesh-device-visibility-' + d.id">Visibility
               <select [id]="'mesh-device-visibility-' + d.id"
                       [attr.data-testid]="'mesh-device-visibility-' + d.id"
-                      [value]="d.visibility" [disabled]="d.state === 'revoked'"
+                      [value]="d.visibility" [disabled]="d.state === 'revoked' || busy().has(d.id)"
                       aria-describedby="mesh-devices-visibility-help"
                       (change)="onVisibilityChange(d, $event)">
                 @for (v of visibilities; track v) {
@@ -75,7 +75,8 @@
                     [attr.data-testid]="'mesh-device-release-' + d.id"
                     [attr.aria-label]="'Release mesh device ' + deviceName(d)"
                     aria-describedby="mesh-devices-release-help"
-                    (click)="release(d)">Release</button>
+                    [disabled]="busy().has(d.id)"
+                    (click)="release(d)">{{ busy().has(d.id) ? 'Working…' : 'Release' }}</button>
           </div>
         </li>
       }

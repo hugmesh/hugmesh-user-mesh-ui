@@ -4,6 +4,7 @@ import {
   MAX_MESH_LABEL_LENGTH,
   MAX_REVOKE_REASON_LENGTH,
   meshBatteryPct,
+  meshDeniedNote,
   meshHops,
   meshSnr,
   meshString,
@@ -95,21 +96,15 @@ export interface MeshWriteResult {
   note: string;
 }
 
-/** 401: no usable session. */
-const SIGNED_OUT_NOTE = 'You need to be signed in with a registered account to manage mesh devices.';
 /**
  * 403: the session is fine but the caller may not do this — missing ROLE_USER,
  * or (on a claim) the per-domain `user-mesh-devices` capability that user-bff's
  * claim gate consults, which a superadmin grants and the domain admin enables.
- * The note must not say "sign in": the caller already is.
+ * The note must not say "sign in": the caller already is. A 401 reads as
+ * "sign in" through the shared {@link meshDeniedNote}.
  */
 const NOT_ALLOWED_NOTE =
   'Managing mesh devices is not allowed for your account or domain right now — ask an administrator.';
-
-/** The note for a 401/403, by status. */
-function deniedNote(status: number): string {
-  return status === 401 ? SIGNED_OUT_NOTE : NOT_ALLOWED_NOTE;
-}
 
 /**
  * Talks to user-bff-api's mesh-device endpoints (behind the fe-gateway at
@@ -155,7 +150,7 @@ export class UserMeshBffService {
     if (!response.ok) {
       this.devicesNoteSubject.next(
         response.status === 401 || response.status === 403
-          ? deniedNote(response.status)
+          ? meshDeniedNote(response.status, NOT_ALLOWED_NOTE)
           : `Your device list is unavailable right now (server said ${response.status}) — anything shown may be out of date.`,
       );
       return this.devicesSubject.value;
@@ -239,7 +234,7 @@ export class UserMeshBffService {
     }
     const note =
       response.status === 401 || response.status === 403
-        ? deniedNote(response.status)
+        ? meshDeniedNote(response.status, NOT_ALLOWED_NOTE)
         : (notes[response.status] ?? `The server could not complete that (it said ${response.status}) — try again later.`);
     return { ok: false, status: response.status, note };
   }

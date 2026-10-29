@@ -47,6 +47,24 @@ export const MAX_MESH_OWNER_LENGTH = 128;
 /** LIMIT: longest Matrix room id rendered on the channels page. */
 export const MAX_MESH_ROOM_ID_LENGTH = 255;
 
+/**
+ * The 401 note shared by BOTH BFF services: there is no usable session, so
+ * the caller needs to sign in — never "ask for a role" (the 403 reading, which
+ * each surface words for itself: the mesh role on the directory, the
+ * user-mesh-devices capability on claiming).
+ */
+export const MESH_SIGNED_OUT_NOTE =
+  'You need to be signed in with a registered account to use the mesh dashboard.';
+
+/**
+ * The note for a denied read or write: {@link MESH_SIGNED_OUT_NOTE} on a 401,
+ * the surface's own `forbiddenNote` on a 403. Kept in ONE place so the two
+ * BFF services cannot drift apart on what a 401 means.
+ */
+export function meshDeniedNote(status: number, forbiddenNote: string): string {
+  return status === 401 ? MESH_SIGNED_OUT_NOTE : forbiddenNote;
+}
+
 /** Battery cap: 0..100 are percentages; 101 is Meshtastic's "on external power" marker. */
 export const MAX_BATTERY_PCT = 101;
 

@@ -5,6 +5,7 @@ import {
   MAX_MESH_OWNER_LENGTH,
   MAX_MESH_ROOM_ID_LENGTH,
   meshBatteryPct,
+  meshDeniedNote,
   meshHops,
   meshIsOnline,
   meshSnr,
@@ -148,7 +149,7 @@ function rowsOf(body: unknown, key: 'nodes' | 'rooms'): unknown[] {
   return [];
 }
 
-/** The note shown when a read fails because the caller lacks ROLE_MESH. */
+/** 403: the session is fine but the caller lacks ROLE_MESH (a 401 reads as "sign in" via {@link meshDeniedNote}). */
 const FORBIDDEN_NOTE =
   'Your account does not have mesh access yet — ask an administrator for the mesh role.';
 
@@ -186,6 +187,7 @@ export class MeshBffService {
 
   private readonly nodesSubject = new BehaviorSubject<MeshNode[]>([]);
   private readonly nodesNoteSubject = new BehaviorSubject<string>('');
+  private readonly nodeStatusNoteSubject = new BehaviorSubject<string>('');
   private readonly roomsSubject = new BehaviorSubject<MeshRoom[]>([]);
   private readonly roomsNoteSubject = new BehaviorSubject<string>('');
 
@@ -193,6 +195,13 @@ export class MeshBffService {
   readonly nodes: Observable<MeshNode[]> = this.nodesSubject.asObservable();
   /** Degradation note for the node directory; `''` when the last read succeeded. */
   readonly nodesNote: Observable<string> = this.nodesNoteSubject.asObservable();
+  /**
+   * Degradation note for the LAST per-row status read ({@link refreshNode});
+   * `''` when it succeeded. Deliberately separate from {@link nodesNote}: one
+   * row refreshing fine says nothing about the directory read, and one row
+   * answering 404 is not a directory outage.
+   */
+  readonly nodeStatusNote: Observable<string> = this.nodeStatusNoteSubject.asObservable();
   /** The cached mesh-enabled room list (latest successful read). */
   readonly rooms: Observable<MeshRoom[]> = this.roomsSubject.asObservable();
   /** Degradation note for the room list; `''` when the last read succeeded. */
@@ -214,6 +223,8 @@ export class MeshBffService {
       .map((row) => parseMeshNode(row, now))
       .filter((n): n is MeshNode => n !== null);
     this.nodesSubject.next(nodes);
+    // A fresh directory supersedes whatever one row last said.
+    this.nodeStatusNoteSubject.next('');
     return nodes;
   }
 
@@ -238,7 +249,8 @@ export class MeshBffService {
    * cached directory, so a per-row "refresh" costs one small request instead of
    * a whole directory reload. Returns the refreshed row, or `null` when the node
    * is unknown (404), the read failed, or the body did not parse — in which case
-   * the cached row is left exactly as it was.
+   * the cached row is left exactly as it was. The outcome is reported on
+   * {@link nodeStatusNote}, never on {@link nodesNote}.
    *
    * <p>A node id that is not a node id at all is rejected locally (no request is
    * made): the path variable is never built from unvalidated user input.
@@ -250,7 +262,7 @@ export class MeshBffService {
     }
     const body = await this.read(
       `${this.base}/status/${encodeURIComponent(canonical)}`,
-      this.nodesNoteSubject,
+      this.nodeStatusNoteSubject,
       'node status',
     );
     if (body === undefined) {
@@ -296,7 +308,7 @@ export class MeshBffService {
     if (!response.ok) {
       noteSubject.next(
         response.status === 401 || response.status === 403
-          ? FORBIDDEN_NOTE
+          ? meshDeniedNote(response.status, FORBIDDEN_NOTE)
           : `The ${surface} is unavailable right now (server said ${response.status}) — anything shown may be out of date.`,
       );
       return undefined;
