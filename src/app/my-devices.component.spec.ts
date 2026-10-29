@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { MyDevicesComponent } from './my-devices.component';
+import { MESH_DEVICE_VISIBILITIES } from './user-mesh-bff.service';
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -204,5 +205,106 @@ describe('MyDevicesComponent', () => {
 
     expect(fixture.nativeElement.querySelector('[data-testid="mesh-devices-note"]')?.textContent)
       .toContain('signed in');
+  });
+
+  it('does not claim I own nothing when the list read failed', async () => {
+    fetchSpy.and.resolveTo(jsonResponse({ error: 'down' }, 500));
+    fixture.detectChanges();
+    await settle();
+
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('[data-testid="mesh-devices-note"]')?.textContent).toContain('server said 500');
+    expect(el.querySelector('[data-testid="mesh-devices-empty"]')).toBeNull();
+    // The claim form is still there — registering does not depend on the list.
+    expect(el.querySelector('[data-testid="mesh-claim-form"]')).not.toBeNull();
+  });
+
+  it('sends one DELETE for a double-clicked Release and disables the button meanwhile', async () => {
+    fetchSpy.and.resolveTo(jsonResponse(DEVICES));
+    fixture.detectChanges();
+    await settle();
+
+    let resolveDelete!: (r: Response) => void;
+    fetchSpy.and.callFake((input: RequestInfo | URL, init?: RequestInit) =>
+      init?.method === 'DELETE'
+        ? new Promise<Response>((resolve) => (resolveDelete = resolve))
+        : Promise.resolve(jsonResponse([DEVICES[0]])));
+    const button = fixture.nativeElement.querySelector('[data-testid="mesh-device-release-dev-2"]') as HTMLButtonElement;
+    button.click();
+    button.click();
+    fixture.detectChanges();
+    expect(button.disabled).toBeTrue();
+    expect(calls('DELETE').length).toBe(1);
+
+    resolveDelete(new Response(null, { status: 204 }));
+    await settle();
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('[data-testid="mesh-device-dev-2"]')).toBeNull();
+    expect(el.querySelector('[data-testid="mesh-devices-status"]')?.textContent).toContain('Released !deadbeef');
+    expect(el.querySelector('[data-testid="mesh-devices-error"]')).toBeNull();
+  });
+
+  it('disables the visibility select while its change is in flight', async () => {
+    fetchSpy.and.resolveTo(jsonResponse(DEVICES));
+    fixture.detectChanges();
+    await settle();
+
+    let resolvePut!: (r: Response) => void;
+    fetchSpy.and.callFake((input: RequestInfo | URL, init?: RequestInit) =>
+      init?.method === 'PUT'
+        ? new Promise<Response>((resolve) => (resolvePut = resolve))
+        : Promise.resolve(jsonResponse([{ ...DEVICES[0], visibility: 'private' }, DEVICES[1]])));
+    const select = fixture.nativeElement.querySelector('[data-testid="mesh-device-visibility-dev-1"]') as HTMLSelectElement;
+    select.value = 'private';
+    select.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    expect(select.disabled).toBeTrue();
+    expect(calls('PUT').length).toBe(1);
+
+    resolvePut(jsonResponse({ ...DEVICES[0], visibility: 'private' }));
+    await settle();
+    expect(select.disabled).toBeFalse();
+    expect(select.value).toBe('private');
+  });
+
+  it('rolls back only the refused row, never a device released in the meantime', async () => {
+    fetchSpy.and.resolveTo(jsonResponse(DEVICES));
+    fixture.detectChanges();
+    await settle();
+
+    // PUT for dev-1 is held; the DELETE of dev-2 and the reload it triggers
+    // complete first, so the list no longer has dev-2.
+    let resolvePut!: (r: Response) => void;
+    fetchSpy.and.callFake((input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === 'PUT') return new Promise<Response>((resolve) => (resolvePut = resolve));
+      if (init?.method === 'DELETE') return Promise.resolve(new Response(null, { status: 204 }));
+      return Promise.resolve(jsonResponse([DEVICES[0]]));
+    });
+    const el: HTMLElement = fixture.nativeElement;
+    const select = el.querySelector('[data-testid="mesh-device-visibility-dev-1"]') as HTMLSelectElement;
+    select.value = 'private';
+    select.dispatchEvent(new Event('change'));
+    (el.querySelector('[data-testid="mesh-device-release-dev-2"]') as HTMLButtonElement).click();
+    await settle();
+    expect(el.querySelector('[data-testid="mesh-device-dev-2"]')).toBeNull();
+
+    // Now the server refuses the visibility change.
+    resolvePut(jsonResponse({}, 404));
+    await settle();
+    expect(fixture.componentInstance.devices().map((d) => d.id)).toEqual(['dev-1']);
+    expect(fixture.componentInstance.devices()[0].visibility).toBe('channels');
+    expect(select.value).toBe('channels');
+    expect(el.querySelector('[data-testid="mesh-device-dev-2"]')).toBeNull();
+  });
+
+  it('offers exactly the visibilities the service exports', async () => {
+    fetchSpy.and.resolveTo(jsonResponse(DEVICES));
+    fixture.detectChanges();
+    await settle();
+
+    expect(fixture.componentInstance.visibilities).toBe(MESH_DEVICE_VISIBILITIES);
+    const options = [...fixture.nativeElement.querySelectorAll('[data-testid="mesh-device-visibility-dev-1"] option')]
+      .map((o) => (o as HTMLOptionElement).value);
+    expect(options).toEqual([...MESH_DEVICE_VISIBILITIES]);
   });
 });

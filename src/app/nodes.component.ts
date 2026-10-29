@@ -46,12 +46,14 @@ export class NodesComponent implements OnInit {
 
   /** The cached directory, mirrored from the service. */
   readonly nodes = signal<MeshNode[]>([]);
-  /** Degradation note ('' = the last read succeeded). */
+  /** Degradation note for the directory ('' = the last read succeeded). */
   readonly note = signal('');
+  /** Note from the last per-row refresh ('' = it succeeded); separate from {@link note}. */
+  readonly refreshNote = signal('');
   /** `true` while the first directory read is in flight (drives the "loading" row). */
   readonly loading = signal(true);
-  /** The node id whose per-row refresh is in flight, else ''. */
-  readonly refreshing = signal('');
+  /** The node ids whose per-row refresh is in flight (several rows may refresh at once). */
+  readonly refreshing = signal<ReadonlySet<string>>(new Set());
   /** Client-side filter text (name, short name, node id, owner). */
   readonly query = signal('');
 
@@ -70,9 +72,11 @@ export class NodesComponent implements OnInit {
   ngOnInit(): void {
     const nodesSub = this.bff.nodes.subscribe((rows) => this.nodes.set(rows));
     const noteSub = this.bff.nodesNote.subscribe((note) => this.note.set(note));
+    const refreshNoteSub = this.bff.nodeStatusNote.subscribe((note) => this.refreshNote.set(note));
     this.destroyRef.onDestroy(() => {
       nodesSub.unsubscribe();
       noteSub.unsubscribe();
+      refreshNoteSub.unsubscribe();
     });
     void this.reload();
   }
@@ -87,18 +91,23 @@ export class NodesComponent implements OnInit {
     }
   }
 
-  /** Re-read ONE row (cheap) — the row is spliced into the cache by the service. */
+  /**
+   * Re-read ONE row (cheap) — the row is spliced into the cache by the service.
+   * A row already refreshing is left alone; other rows may refresh meanwhile.
+   */
   async refresh(node: MeshNode): Promise<void> {
-    this.refreshing.set(node.nodeId);
+    if (this.refreshing().has(node.nodeId)) return;
+    // Signals compare by identity: always publish a NEW set, never mutate one.
+    this.refreshing.update((ids) => new Set(ids).add(node.nodeId));
     try {
       await this.bff.refreshNode(node.nodeId);
     } finally {
-      this.refreshing.set('');
+      this.refreshing.update((ids) => {
+        const next = new Set(ids);
+        next.delete(node.nodeId);
+        return next;
+      });
     }
-  }
-
-  trackNode(_index: number, node: MeshNode): string {
-    return node.nodeId;
   }
 
   // ── Presentation helpers (thin wrappers so the template stays declarative) ──

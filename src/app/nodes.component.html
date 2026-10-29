@@ -28,6 +28,9 @@
   @if (note()) {
     <p class="degraded" role="alert" data-testid="mesh-nodes-note">{{ note() }}</p>
   }
+  @if (refreshNote()) {
+    <p class="field-error" role="alert" data-testid="mesh-nodes-refresh-note">{{ refreshNote() }}</p>
+  }
 
   @if (!loading() && nodes().length === 0 && !note()) {
     <p class="empty" data-testid="mesh-nodes-empty">
@@ -79,7 +82,8 @@
                   <span class="level" [attr.data-level]="batteryLevel(node)" aria-hidden="true">{{ label }}</span>
                   <span class="sr">{{ batterySr(node) }}</span>
                 } @else {
-                  <span aria-label="battery unknown">—</span>
+                  <span aria-hidden="true">—</span>
+                  <span class="sr">battery unknown</span>
                 }
               </td>
               <td>
@@ -90,7 +94,8 @@
                   <span class="sr">{{ signalSr(node) }}</span>
                   <span class="level-text" aria-hidden="true">{{ level }}</span>
                 } @else {
-                  <span aria-label="signal unknown">—</span>
+                  <span aria-hidden="true">—</span>
+                  <span class="sr">signal unknown</span>
                 }
               </td>
               <td>{{ hops(node) }}</td>
@@ -105,9 +110,9 @@
                 <button type="button" class="row-action"
                         [attr.data-testid]="'mesh-node-refresh-' + node.nodeId.slice(1)"
                         [attr.aria-label]="'Refresh status of ' + displayName(node)"
-                        [disabled]="refreshing() === node.nodeId"
+                        [disabled]="refreshing().has(node.nodeId)"
                         (click)="refresh(node)">
-                  {{ refreshing() === node.nodeId ? 'Refreshing…' : 'Refresh' }}
+                  {{ refreshing().has(node.nodeId) ? 'Refreshing…' : 'Refresh' }}
                 </button>
               </td>
             </tr>

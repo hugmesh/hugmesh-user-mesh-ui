@@ -160,4 +160,104 @@ describe('NodesComponent', () => {
     expect(row.textContent).toContain('Valley node');
     expect(row.textContent).toContain('online');
   });
+
+  it('keeps the directory banner up when a single row refresh succeeds', async () => {
+    fetchSpy.and.resolveTo(jsonResponse(NODES_BODY));
+    fixture.detectChanges();
+    await settle();
+
+    // The directory reload fails: the last good rows stay under a banner.
+    fetchSpy.and.resolveTo(jsonResponse({ error: 'down' }, 503));
+    await fixture.componentInstance.reload();
+    await settle();
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('[data-testid="mesh-nodes-note"]')?.textContent).toContain('server said 503');
+    expect(el.querySelectorAll('tbody tr').length).toBe(2);
+
+    // One row refreshes fine — that says nothing about the directory.
+    fetchSpy.and.resolveTo(jsonResponse(NODES_BODY.nodes[1]));
+    (el.querySelector('[data-testid="mesh-node-refresh-00ffee11"]') as HTMLButtonElement).click();
+    await settle();
+    expect(el.querySelector('[data-testid="mesh-nodes-note"]')?.textContent).toContain('server said 503');
+  });
+
+  it('reports a failed row refresh beside the row, not as a directory-wide banner', async () => {
+    fetchSpy.and.resolveTo(jsonResponse(NODES_BODY));
+    fixture.detectChanges();
+    await settle();
+
+    fetchSpy.and.resolveTo(jsonResponse({}, 404));
+    const el: HTMLElement = fixture.nativeElement;
+    (el.querySelector('[data-testid="mesh-node-refresh-00ffee11"]') as HTMLButtonElement).click();
+    await settle();
+
+    expect(el.querySelector('[data-testid="mesh-nodes-note"]')).toBeNull();
+    expect(el.querySelector('[data-testid="mesh-nodes-refresh-note"]')?.textContent).toContain('server said 404');
+    // The next successful refresh clears it again.
+    fetchSpy.and.resolveTo(jsonResponse(NODES_BODY.nodes[1]));
+    (el.querySelector('[data-testid="mesh-node-refresh-00ffee11"]') as HTMLButtonElement).click();
+    await settle();
+    expect(el.querySelector('[data-testid="mesh-nodes-refresh-note"]')).toBeNull();
+  });
+
+  it('keeps a second row marked as refreshing after the first row finishes', async () => {
+    fetchSpy.and.resolveTo(jsonResponse(NODES_BODY));
+    fixture.detectChanges();
+    await settle();
+
+    const pending = new Map<string, (r: Response) => void>();
+    fetchSpy.and.callFake((input: RequestInfo | URL) =>
+      new Promise<Response>((resolve) => pending.set(String(input), resolve)));
+    const el: HTMLElement = fixture.nativeElement;
+    const buttonA = el.querySelector('[data-testid="mesh-node-refresh-a1b2c3d4"]') as HTMLButtonElement;
+    const buttonB = el.querySelector('[data-testid="mesh-node-refresh-00ffee11"]') as HTMLButtonElement;
+    buttonA.click();
+    buttonB.click();
+    fixture.detectChanges();
+    expect(buttonA.disabled).toBeTrue();
+    expect(buttonB.disabled).toBeTrue();
+
+    pending.get('/bff/mesh/status/!a1b2c3d4')!(jsonResponse(NODES_BODY.nodes[0]));
+    await settle();
+    expect(buttonA.disabled).toBeFalse();
+    expect(buttonB.disabled).toBeTrue();
+    expect(buttonB.textContent).toContain('Refreshing');
+
+    pending.get('/bff/mesh/status/!00ffee11')!(jsonResponse(NODES_BODY.nodes[1]));
+    await settle();
+    expect(buttonB.disabled).toBeFalse();
+    expect(buttonB.textContent).toContain('Refresh');
+    expect(buttonB.textContent).not.toContain('Refreshing');
+  });
+
+  it('reads a 401 as "signed out", not as a missing mesh role', async () => {
+    fetchSpy.and.resolveTo(jsonResponse({}, 401));
+    fixture.detectChanges();
+    await settle();
+
+    const text = fixture.nativeElement.querySelector('[data-testid="mesh-nodes-note"]')?.textContent ?? '';
+    expect(text).toContain('signed in');
+    expect(text).not.toContain('mesh role');
+  });
+
+  it('gives an unknown battery or signal a spoken label, not an aria-label on a span', async () => {
+    fetchSpy.and.resolveTo(jsonResponse([
+      { nodeId: '!0badcafe', longName: 'Quiet node', batteryPct: null, snr: null, online: false },
+    ]));
+    fixture.detectChanges();
+    await settle();
+
+    const row = fixture.nativeElement.querySelector('[data-testid="mesh-node-0badcafe"]') as HTMLElement;
+    const cells = row.querySelectorAll('td');
+    // Battery is the 3rd cell, signal the 4th (Status, Last heard, Battery, Signal, …).
+    const battery = cells[2];
+    const signal = cells[3];
+    expect(battery.querySelector('.sr')?.textContent).toContain('battery unknown');
+    expect(signal.querySelector('.sr')?.textContent).toContain('signal unknown');
+    // The dash itself is decoration: hidden from the accessibility tree, never named.
+    expect(row.querySelector('[aria-label="battery unknown"]')).toBeNull();
+    expect(row.querySelector('[aria-label="signal unknown"]')).toBeNull();
+    expect(battery.querySelector('[aria-hidden="true"]')?.textContent).toContain('—');
+    expect(signal.querySelector('[aria-hidden="true"]')?.textContent).toContain('—');
+  });
 });
