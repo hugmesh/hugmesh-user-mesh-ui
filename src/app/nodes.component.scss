@@ -37,7 +37,27 @@
 }
 
 .table-wrap {
+  // `position: relative` is load-bearing: the global `.sr` utility is
+  // position:absolute, so without a positioned ancestor the hidden spoken
+  // labels in the cells escape the overflow clip and widen the whole document
+  // on narrow screens (measured: 1070px of sideways scroll at 390px wide).
+  position: relative;
   overflow-x: auto;
+}
+
+// Only shown when the table is wider than the screen (see the media query):
+// a plain-text hint that the rest of the columns are a swipe away.
+.scroll-hint {
+  display: none;
+  margin: 0 0 0.5rem;
+  color: var(--hug-text-muted);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 48rem) {
+  .scroll-hint {
+    display: block;
+  }
 }
 
 .nodes {

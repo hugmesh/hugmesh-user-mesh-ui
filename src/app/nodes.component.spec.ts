@@ -118,6 +118,33 @@ describe('NodesComponent', () => {
     expect(el.querySelector('[data-testid="mesh-nodes-note"]')?.textContent).toContain('mesh role');
   });
 
+  it('keeps the hidden spoken labels inside the table clip on a 390px-wide screen', async () => {
+    fetchSpy.and.resolveTo(jsonResponse(NODES_BODY));
+    const host: HTMLElement = fixture.nativeElement;
+    host.style.width = '390px';
+    host.style.display = 'block';
+    fixture.detectChanges();
+    await settle();
+
+    const wrap = host.querySelector('.table-wrap') as HTMLElement;
+    // The global `.sr` util is position:absolute; the wrap must be its
+    // containing block or the labels widen the document sideways.
+    expect(getComputedStyle(wrap).position).toBe('relative');
+    const table = wrap.querySelector('table') as HTMLElement;
+    expect(table.getBoundingClientRect().width).toBeGreaterThan(390);
+    const wrapRect = wrap.getBoundingClientRect();
+    expect(wrapRect.width).toBeLessThanOrEqual(390);
+    // Each hidden label sits inside the wrap's own scrollable box (its layout
+    // position is beyond the visible edge, which is fine: the wrap clips it)
+    // and, decisively, nothing widens the host beyond the screen.
+    const srs = [...wrap.querySelectorAll('.sr')] as HTMLElement[];
+    expect(srs.length).toBeGreaterThan(0);
+    for (const sr of srs) {
+      expect(sr.getBoundingClientRect().right).toBeLessThanOrEqual(wrapRect.left + wrap.scrollWidth + 1);
+    }
+    expect(host.scrollWidth).toBeLessThanOrEqual(391);
+  });
+
   it('refreshes one row through GET /bff/mesh/status/{nodeId}', async () => {
     fetchSpy.and.resolveTo(jsonResponse(NODES_BODY));
     fixture.detectChanges();

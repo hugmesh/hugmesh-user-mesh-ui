@@ -135,6 +135,21 @@ describe('MyDevicesComponent', () => {
       .toContain('already claimed');
   });
 
+  it('reads a 403 on claim as "not allowed", never as "sign in" (capability gate)', async () => {
+    fetchSpy.and.resolveTo(jsonResponse([]));
+    fixture.detectChanges();
+    await settle();
+
+    fetchSpy.and.resolveTo(jsonResponse({ error: 'forbidden' }, 403));
+    fixture.componentInstance.nodeIdInput = 'a1b2c3d4';
+    await fixture.componentInstance.claim();
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.querySelector('[data-testid="mesh-devices-error"]')?.textContent ?? '';
+    expect(text).toContain('not allowed for your account or domain');
+    expect(text).not.toContain('signed in');
+  });
+
   it('releases through DELETE /bff/user/mesh-devices/{id}', async () => {
     fetchSpy.and.resolveTo(jsonResponse(DEVICES));
     fixture.detectChanges();
