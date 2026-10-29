@@ -29,29 +29,27 @@ that shows
 
 ## Status
 
-This repository holds the federation scaffold, the backend client, and the
-formatting and validation logic. The view components that render them are the
-next milestone.
+This repository holds the federation scaffold, the two backend clients, the
+formatting and validation logic, and the three views that render them. It
+builds, its unit suite runs, and the Docker image can be produced.
 
 - [x] Native-federation remote wiring (build / serve / test targets, shared-deps
       and skip-list contract in `federation-base.js` / `federation.config.js`)
 - [x] `MeshBffService` — typed, fail-soft client for the mesh backend-for-frontend
+- [x] `UserMeshBffService` — typed, fail-soft client for the caller's own claimed
+      radios on user-bff (`/bff/user/mesh-devices`)
 - [x] `mesh-format.ts` — pure formatting, bucketing and input-validation helpers
 - [x] Route table, role guard (`meshGuard`) and cross-remote session integration
       (`SessionService`)
-- [ ] `NodesComponent` — the node directory view
-- [ ] `MyDevicesComponent` — the claimed-devices view
-- [ ] `ChannelsComponent` — the mesh-enabled channels view
-- [ ] Unit test suite (the Karma/Jasmine harness is wired up; specs are not yet
-      written)
+- [x] `NodesComponent` — the node directory view
+- [x] `MyDevicesComponent` — the claimed-devices view (claim, release, visibility,
+      live status)
+- [x] `ChannelsComponent` — the mesh-enabled channels view
+- [x] Unit test suite (Karma/Jasmine: the pure helpers, the device parser and all
+      three views against a mocked `fetch`)
 
-The three routes below are declared and guarded. But `src/app/user-mesh.routes.ts`
-imports `nodes.component`, `my-devices.component` and `channels.component`, and
-none of those files exist. Until they land, every build of this remote fails,
-and so does the Docker image build.
-
-The remote is also not wired into the platform. On the sibling repos'
-`origin/main` as of 2026-10-15:
+The remote is not yet wired into the platform. On the sibling repos'
+`origin/main` as of 2026-10-28:
 
 - `hugmesh-host-shell` has no `user-mesh` entry.
 - The fe-gateway has no `/user-mesh` route.
@@ -60,8 +58,11 @@ The remote is also not wired into the platform. On the sibling repos'
   has no `/user-mesh/**` row. It has `/bff/mesh/**`, which needs `ROLE_MESH`.
 
 `hugmesh-generator` carries a test that asserts this absence
-(`tests/e2e/features/mined-identity/mesh-remote-unmounted.feature`). The PR that
-adds the three components must delete that test and add the route and the row.
+(`tests/e2e/features/mined-identity/mesh-remote-unmounted.feature`). Now that the
+three components exist, the host-side wiring is what remains: add the host-shell
+entry, the fe-gateway route and the `/user-mesh/**` route-access row, and delete
+that test, in the sibling repos. Until then the dashboard is reachable only
+standalone (`npm start`).
 
 ## How it fits into HugMesh
 
@@ -119,9 +120,9 @@ Related HugMesh repositories:
 
 | Path | Component | Purpose |
 |---|---|---|
-| `/user-mesh` | `NodesComponent` *(planned)* | The full mesh node directory — every LoRa radio the bridge has heard |
-| `/user-mesh/devices` | `MyDevicesComponent` *(planned)* | The caller's own claimed radios: claim, release, per-device visibility, live status |
-| `/user-mesh/channels` | `ChannelsComponent` *(planned)* | Mesh-enabled chat rooms and the LoRa channel index each one bridges |
+| `/user-mesh` | `NodesComponent` | The full mesh node directory — every LoRa radio the bridge has heard, with a client-side filter and per-row refresh |
+| `/user-mesh/devices` | `MyDevicesComponent` | The caller's own claimed radios: claim, release, per-device visibility, live status (via user-bff) |
+| `/user-mesh/channels` | `ChannelsComponent` | Mesh-enabled chat rooms grouped by the LoRa channel index each one bridges |
 
 All three are declared behind `meshGuard` in `src/app/user-mesh.routes.ts`.
 
@@ -206,8 +207,9 @@ npm start
 
 This serves a minimal dev shell (not the production host) at
 `http://localhost:4210`, with `USER_MESH_ROUTES` mounted at the root. You can
-browse the dashboard without the HugMesh host shell. Until the three view
-components exist, it does not compile (see [Status](#status)).
+browse the dashboard without the HugMesh host shell. Every BFF call is
+same-origin, so point `__SNAP_BFF_URL__` (see [Configuration](#configuration)) at
+a running gateway or expect the pages to show their "could not reach" banners.
 
 ### Build
 
@@ -225,8 +227,9 @@ npm test          # single run, headless Chrome
 npm run test:watch # interactive watch mode
 ```
 
-Karma/Jasmine is configured (`karma.conf.js`). No spec files exist yet (see
-[Status](#status)).
+Karma/Jasmine is configured (`karma.conf.js`). The specs cover the pure helpers
+(`mesh-format.spec.ts`), the device-row parser, and each view against a mocked
+`fetch`. Set `CHROME_BIN` if Chrome is not on your `PATH`.
 
 ## Configuration
 
@@ -241,7 +244,12 @@ to `hugmesh-mesh-bff-api`.
 ```
 src/
   app/
+    nodes.component.*       # /user-mesh — the node directory
+    my-devices.component.*  # /user-mesh/devices — my claimed radios
+    channels.component.*    # /user-mesh/channels — mesh-enabled rooms
+    mesh-nav.component.ts   # the three-tab nav shared by the views
     mesh-bff.service.ts     # HTTP client for /bff/mesh/**, fail-soft & cached
+    user-mesh-bff.service.ts # HTTP client for /bff/user/mesh-devices, fail-soft
     mesh-format.ts          # pure formatting/validation helpers (unit-testable)
     mesh.guard.ts           # client-side mesh-role route guard
     session.service.ts      # cross-remote session state (localStorage-backed)
@@ -250,7 +258,8 @@ src/
     app.routes.ts           # dev-shell routing
   bootstrap.ts              # dev-shell bootstrap
   main.ts                   # federation entry point
-  styles.scss, styles/      # shared HugMesh accessibility baseline + design tokens
+  styles.scss, styles/      # shared HugMesh accessibility baseline, design tokens,
+                            # and the page chrome mixin the three views share
 federation.config.js        # this remote's native-federation config
 federation-base.js          # shared federation helpers (shared deps, skip list)
 Dockerfile                  # multi-stage build -> nginx runtime image
@@ -264,8 +273,8 @@ a visible two-layer focus ring, underlined links (never colour alone), 44px
 minimum touch targets on coarse pointers (touch screens), and
 `prefers-reduced-motion` and `prefers-contrast` support. `mesh-format.ts`
 supplies the text descriptions for statuses otherwise shown by colour alone
-(battery level, signal quality). The views that show them are not built yet. The
-styles copy the baseline of HugMesh's other frontends, so a surface looks and
+(battery level, signal quality), and every view pairs each coloured cell with a
+visually hidden spoken label. The styles copy the baseline of HugMesh's other frontends, so a surface looks and
 behaves the same standalone or through the host shell.
 
 ## Deployment
@@ -281,9 +290,9 @@ cross-origin. It also sets a baseline of security headers
 ### Versions and releases
 
 The version lives in `package.json` (and must match `package-lock.json`). It
-follows `MAJOR.MINOR.PATCH-beta.N`. Today it is `0.1.0-beta.1`: 0.1 means a
-scaffold whose image has not yet been built successfully, because of the
-missing view components described under [Status](#status).
+follows `MAJOR.MINOR.PATCH-beta.N`. Today it is `0.1.0-beta.1`: a first
+buildable dashboard that is not yet mounted in the host shell (see
+[Status](#status)).
 
 The GitHub Actions workflow `.github/workflows/release.yml` builds the image and
 pushes it to `ghcr.io/hugmesh/hugmesh-user-mesh-ui`:

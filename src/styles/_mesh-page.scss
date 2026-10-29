@@ -1,0 +1,126 @@
+// Shared page chrome for the three mesh dashboard views (nodes / my devices /
+// channels). Uses ONLY the cross-repo --hug-* contract from src/styles.scss plus
+// the neutral radius/font tokens — never the host-only neon palette.
+@use 'tokens' as t;
+
+@mixin mesh-page {
+  :host {
+    display: block;
+  }
+
+  .hug-mesh-page {
+    display: block;
+    padding: 1rem;
+    max-width: 80rem;
+  }
+
+  .page-head h2 {
+    margin: 0 0 0.25rem;
+  }
+
+  .lead {
+    margin: 0;
+    color: var(--hug-text-muted);
+    max-width: 70ch;
+  }
+
+  // A read failed: the page keeps showing the last good data under this banner
+  // (the service's fail-soft contract), so the user can tell "stale" from "empty".
+  .degraded {
+    margin: 1rem 0;
+    padding: 0.75rem 1rem;
+    border-radius: t.$radius-sm;
+    border: 1px solid var(--hug-error);
+    background: var(--hug-bg-1);
+    color: var(--hug-text);
+  }
+
+  .empty {
+    margin: 1rem 0;
+    padding: 1rem;
+    border-radius: t.$radius-md;
+    border: 1px dashed var(--hug-border);
+    background: var(--hug-bg-1);
+    color: var(--hug-text-muted);
+  }
+
+  .status-note {
+    margin: 0.5rem 0 0;
+    color: var(--hug-accent-soft);
+  }
+
+  button {
+    min-height: 2.75rem;
+    padding: 0 1rem;
+    border-radius: t.$radius-sm;
+    border: 1px solid var(--hug-accent);
+    background: var(--hug-bg-1);
+    color: var(--hug-text);
+    font: inherit;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: var(--hug-bg-2);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+  }
+
+  .row-action {
+    min-height: 2.25rem;
+    padding: 0 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  // Battery / signal buckets. Colour is reinforced by the text in the cell and
+  // by a visually-hidden spoken label (WCAG 1.4.1 — never colour alone).
+  .level {
+    font-variant-numeric: tabular-nums;
+
+    &[data-level='good'],
+    &[data-level='powered'] {
+      color: var(--hug-success);
+    }
+
+    &[data-level='fair'] {
+      color: var(--hug-text);
+    }
+
+    &[data-level='poor'] {
+      color: var(--hug-error);
+    }
+  }
+
+  .meter {
+    display: inline-block;
+    width: 4rem;
+    height: 0.5rem;
+    border-radius: 0.25rem;
+    background: var(--hug-bg-2);
+    vertical-align: middle;
+    margin-right: 0.4rem;
+    overflow: hidden;
+
+    .meter-fill {
+      display: block;
+      height: 100%;
+      background: var(--hug-success);
+    }
+
+    &[data-level='fair'] .meter-fill {
+      background: var(--hug-accent-soft);
+    }
+
+    &[data-level='poor'] .meter-fill {
+      background: var(--hug-error);
+    }
+  }
+
+  .level-text {
+    color: var(--hug-text-muted);
+    font-size: 0.85rem;
+  }
+}

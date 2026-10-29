@@ -1,0 +1,118 @@
+<section class="hug-mesh-page" data-testid="mesh-nodes-view" aria-labelledby="mesh-nodes-heading">
+  <hug-mesh-nav />
+  <header class="page-head">
+    <h2 id="mesh-nodes-heading">Mesh nodes</h2>
+    <p class="lead">
+      Every LoRa radio the mesh bridge has heard. Names, battery and signal are reported by
+      the radios themselves and are not verified — treat them as a hint, not a fact.
+    </p>
+  </header>
+
+  <div class="toolbar">
+    <label class="filter" for="mesh-nodes-filter">Filter
+      <input id="mesh-nodes-filter" type="search" data-testid="mesh-nodes-filter"
+             [ngModel]="query()" (ngModelChange)="query.set($event)"
+             placeholder="name, node id or owner" autocomplete="off" />
+    </label>
+    <p class="count" data-testid="mesh-nodes-count" role="status" aria-live="polite">
+      @if (loading()) {
+        Loading the node directory…
+      } @else {
+        {{ visible().length }} of {{ nodes().length }} nodes shown · {{ onlineCount() }} online
+      }
+    </p>
+    <button type="button" class="reload" data-testid="mesh-nodes-reload"
+            (click)="reload()" [disabled]="loading()">Reload</button>
+  </div>
+
+  @if (note()) {
+    <p class="degraded" role="alert" data-testid="mesh-nodes-note">{{ note() }}</p>
+  }
+
+  @if (!loading() && nodes().length === 0 && !note()) {
+    <p class="empty" data-testid="mesh-nodes-empty">
+      The bridge has not heard any radios yet. Nodes appear here as soon as one transmits.
+    </p>
+  } @else if (!loading() && visible().length === 0 && nodes().length > 0) {
+    <p class="empty" data-testid="mesh-nodes-no-match">No nodes match "{{ query() }}".</p>
+  }
+
+  @if (visible().length > 0) {
+    <div class="table-wrap">
+      <table class="nodes" data-testid="mesh-nodes-table">
+        <caption class="sr">Mesh node directory</caption>
+        <thead>
+          <tr>
+            <th scope="col">Node</th>
+            <th scope="col">Status</th>
+            <th scope="col">Last heard</th>
+            <th scope="col">Battery</th>
+            <th scope="col">Signal</th>
+            <th scope="col">Route</th>
+            <th scope="col">Owner</th>
+            <th scope="col"><span class="sr">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (node of visible(); track node.nodeId) {
+            <tr [attr.data-testid]="'mesh-node-' + node.nodeId.slice(1)" [class.offline]="!node.online">
+              <th scope="row" class="node-cell">
+                @if (avatar(node); as colors) {
+                  <span class="avatar" aria-hidden="true"
+                        [style.background]="colors.background" [style.color]="colors.foreground">{{ avatarText(node) }}</span>
+                } @else {
+                  <span class="avatar untinted" aria-hidden="true">{{ avatarText(node) }}</span>
+                }
+                <span class="names">
+                  <span class="name">{{ displayName(node) }}</span>
+                  <code class="node-id">{{ node.nodeId }}</code>
+                </span>
+              </th>
+              <td>
+                <span class="dot" [class.online]="node.online" aria-hidden="true"></span>
+                <span>{{ node.online ? 'online' : 'offline' }}</span>
+              </td>
+              <td>{{ lastHeard(node) }}</td>
+              <td>
+                @if (batteryLabel(node); as label) {
+                  <span class="level" [attr.data-level]="batteryLevel(node)" aria-hidden="true">{{ label }}</span>
+                  <span class="sr">{{ batterySr(node) }}</span>
+                } @else {
+                  <span aria-label="battery unknown">—</span>
+                }
+              </td>
+              <td>
+                @if (signalLevel(node); as level) {
+                  <span class="meter" [attr.data-level]="level" aria-hidden="true">
+                    <span class="meter-fill" [style.width.%]="signalPercent(node)"></span>
+                  </span>
+                  <span class="sr">{{ signalSr(node) }}</span>
+                  <span class="level-text" aria-hidden="true">{{ level }}</span>
+                } @else {
+                  <span aria-label="signal unknown">—</span>
+                }
+              </td>
+              <td>{{ hops(node) }}</td>
+              <td>
+                @if (node.registeredTo) {
+                  <span class="owner">{{ node.registeredTo }}</span>
+                } @else {
+                  <span class="muted">anonymous</span>
+                }
+              </td>
+              <td>
+                <button type="button" class="row-action"
+                        [attr.data-testid]="'mesh-node-refresh-' + node.nodeId.slice(1)"
+                        [attr.aria-label]="'Refresh status of ' + displayName(node)"
+                        [disabled]="refreshing() === node.nodeId"
+                        (click)="refresh(node)">
+                  {{ refreshing() === node.nodeId ? 'Refreshing…' : 'Refresh' }}
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
