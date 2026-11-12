@@ -1,6 +1,6 @@
 {
   "name": "@hugmesh/user-mesh",
-  "version": "0.4.0-beta.2",
+  "version": "0.5.0-beta.1",
   "description": "Mesh dashboard (LoRa node directory, my claimed radios, mesh-enabled channels) — Angular micro-frontend (native-federation remote) for the hugmesh.net host.",
   "license": "MIT",
   "private": true,
